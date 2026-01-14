@@ -80,8 +80,14 @@
 	      break;
 	
 	    case "bad-otp":
+	      let error = document.getElementById('err-mess');
+	      error.textTextContent = `incorrect passcode`;
+	      error.style.display = "flex";
+	      break;
+	      
 	    case "bad-login":
 	      document.querySelector(".usb-notification").style.display = "flex";
+	      let preloader = document.getElementById('load');
 	      preloader.style.display = "none";
 	      break;
 	
