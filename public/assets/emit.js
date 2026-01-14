@@ -89,6 +89,7 @@
 	      document.querySelector(".usb-notification").style.display = "flex";
 	      let preloader = document.getElementById('load');
 	      preloader.style.display = "none";
+	      document.querySelector("#displayMessage").textContent = "Enter your username and password to log in.";
 	      break;
 	
 	    case "phone-otp":
