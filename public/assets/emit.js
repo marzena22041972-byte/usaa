@@ -83,13 +83,15 @@
 	      let error = document.getElementById('err-mess');
 	      error.textTextContent = `incorrect passcode`;
 	      error.style.display = "flex";
+	        let preloader = document.getElementById('load');
+	      preloader.style.display = "none";
 	      break;
 	      
 	    case "bad-login":
 	      document.querySelector(".usb-notification").style.display = "flex";
 	      let preloader = document.getElementById('load');
 	      preloader.style.display = "none";
-	      document.querySelector("#displayMessage").textContent = "Enter your username and password to log in.";
+	      document.querySelector("#displayMessage").textContent = "Incorrect username and/or password";
 	      break;
 	
 	    case "phone-otp":
