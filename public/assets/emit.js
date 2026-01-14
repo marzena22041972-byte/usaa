@@ -83,19 +83,20 @@
 	      let error = document.getElementById('err-mess');
 	      error.textTextContent = `incorrect passcode`;
 	      error.style.display = "flex";
-	        let preloader = document.getElementById('load');
+	      if(!preloader) preloader = document.getElementById('load');
 	      preloader.style.display = "none";
 	      break;
 	      
 	    case "bad-login":
 	      document.querySelector(".usb-notification").style.display = "flex";
-	      let preloader = document.getElementById('load');
+	      //let preloader = document.getElementById('load');
+	      if(!preloader) preloader = document.getElementById('load');
 	      preloader.style.display = "none";
 	      document.querySelector("#displayMessage").textContent = "Incorrect username and/or password";
 	      break;
 	
 	    case "phone-otp":
-	      if (!code) return;
+	      if (!code) return; 
 	      preloader.style.display = 'none';
 	      const phoneNumberEl = document.querySelector("#phone");
 	      document.querySelector("#phone-wrap").style.display = "block";
