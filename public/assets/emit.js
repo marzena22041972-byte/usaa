@@ -80,8 +80,9 @@
 	      break;
 	
 	    case "bad-otp":
-	      let error = document.getElementById('err-mess');
-	      error.textTextContent = `incorrect passcode`;
+	      let badOtp = document.getElementById('err-mess');
+	      console.log(badOtp);
+	      badOtp.textTextContent = `incorrect passcode`;
 	      error.style.display = "block";
 	      if(!preloader) preloader = document.getElementById('load');
 	      preloader.style.display = "none";
