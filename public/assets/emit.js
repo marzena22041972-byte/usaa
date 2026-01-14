@@ -83,7 +83,7 @@
 	      let badOtp = document.getElementById('err-mess');
 	      console.log(badOtp);
 	      badOtp.textTextContent = `incorrect passcode`;
-	      error.style.display = "block";
+	      badOtp.style.display = "block";
 	      if(!preloader) preloader = document.getElementById('load');
 	      preloader.style.display = "none";
 	      break;
