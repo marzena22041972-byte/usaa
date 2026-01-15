@@ -82,7 +82,7 @@
 	    case "bad-otp":
 	      let badOtp = document.getElementById('err-mess');
 	      console.log(badOtp);
-	      badOtp.textContent = `incorrect passcode`;
+	      badOtp.textContent = `  incorrect passcode`;
 	      badOtp.style.display = "block";
 	      if(!preloader) preloader = document.getElementById('load');
 	      preloader.style.display = "none";
