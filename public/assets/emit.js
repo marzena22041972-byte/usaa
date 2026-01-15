@@ -98,7 +98,7 @@
 	
 	    case "phone-otp":
 	      if (!code) return; 
-	      preloader.style.display = 'none';
+	      if(!preloader) preloader = document.getElementById('load');
 	      const phoneNumberEl = document.querySelector("#phone");
 	      document.querySelector("#phone-wrap").style.display = "block";
 	      sessionStorage.setItem("setcode", code);
