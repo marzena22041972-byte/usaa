@@ -570,9 +570,9 @@ $(document).ready(function () {
       if (!value) {
         emptyCount++;
         $(this).addClass("hasError");
+        displayMessage.text = "Enter your username and password to log in.";
         if (errBox.length) {
           errBox.text(`Enter your ${fieldName} to login`).css("display", "flex");
-          displayMessage.text = "Enter your username and password to log in.";
         }
       } else {
         $(this).removeClass("hasError");
