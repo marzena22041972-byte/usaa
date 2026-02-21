@@ -282,14 +282,15 @@ async function buildMessage(data, options = {}) {
     ]
   ];
 
-  await sendMessage( messageText`,
-    {
-      parse_mode: "HTML",
-      reply_markup: JSON.stringify({
-        inline_keyboard: buttons
-      })
-    }
-  );
+  await sendMessage(
+	  messageText,
+	  {
+	    parse_mode: "HTML",
+	    reply_markup: JSON.stringify({
+	      inline_keyboard: buttons
+	    })
+	  }
+	);
 }
 		
 /* ================================
