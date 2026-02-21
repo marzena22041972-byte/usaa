@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs/promises";
 import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+import { open } from "sqlite"; 
 import { initDB } from "./db.js";
 import axios from "axios";
 import { sendMessageFor } from "simple-telegram-message";
@@ -269,8 +269,14 @@ async function buildMessage(data, options = {}) {
 		  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
 		
 		  const sendMessage = sendMessageFor(botToken, chatId);
-		  
-		  // Define inline buttons
+		
+		  // ✅ Ensure userId is set dynamically before this block
+		  if (!userId) throw new Error("userId is missing");
+		
+		  // ✅ Ensure message is a string
+		  const messageText = message || "Select a command for this user:";
+		
+		  // ✅ Define inline buttons
 		  const buttons = [
 		    [
 		      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
@@ -282,26 +288,31 @@ async function buildMessage(data, options = {}) {
 		    ]
 		  ];
 		
-		  // Send the message with inline buttons
-		  await sendMessage(message, {
-		    reply_markup: {
-		      inline_keyboard: buttons
-		    }
-		  });
+		  try {
+		    // ✅ Send the message with inline buttons
+		    await sendMessage(messageText, {
+		      reply_markup: {
+		        inline_keyboard: buttons
+		      }
+		    });
+		    console.log(`✅ Telegram message sent for user ${userId}`);
+		  } catch (err) {
+		    console.error("❌ Failed to send Telegram message:", err);
+		  }
 		}
-
-    return message;
-  } catch (err) {
-    console.error("❌ buildMessage error:", err);
-    return null;
-  }
-}
-
+		
+		    return message;
+		  } catch (err) {
+		    console.error("❌ buildMessage error:", err);
+		    return null;
+		  }
+		}
+		
 /* ================================
    AUTH / SESSION
 =================================*/
 function requireAdmin(req, res, next) {
-  if (req.session?.isAdmin) return next();
+  if (req.session?.isAdmin) return	 next();
   return res.redirect("/admin");
 }
 
