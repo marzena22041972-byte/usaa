@@ -44,7 +44,7 @@ async function setWebhook(botToken) {
   }
 
   // Make sure it includes protocol
-  const baseUrl = row.domain.startsWith("http")
+  const baseUrl = domain.startsWith("http")
     ? domain
     : `https://${row.domain}`;
 
