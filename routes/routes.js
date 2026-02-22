@@ -214,7 +214,7 @@ router.get("/logout", (req, res) => {
     // 📤 STEP 3: Build message
     // -------------------------------
     
-   console.log("tg en status:", telegramEnableStatus);
+   console.log("tg en status:", telegramEnableStatus, userId);
     
 	const message = await buildMessage(
 		  req.body,
