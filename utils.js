@@ -32,35 +32,32 @@ function getReqClientIP(req) {
 
 
 async function setWebhook(botToken) {
-  // 1️⃣ Get domain from database
-  const domain = await db.get(
+  const row = await db.get(
     "SELECT domain FROM admin_settings WHERE id = 1"
   );
-  
-  console.log(domain);
 
-  if (!domain ) {
+  console.log(row);
+
+  if (!row || !row.domain || !row.domain.trim()) {
     throw new Error("Domain is not set in admin_settings");
   }
 
-  // Make sure it includes protocol
+  const domain = row.domain.trim(); // remove leading/trailing spaces
+
   const baseUrl = domain.startsWith("http")
     ? domain
-    : `https://${row.domain}`;
+    : `https://${domain}`;
 
   const webhookUrl = `${baseUrl}/telegram-webhook`;
 
   console.log("Using webhook URL:", webhookUrl);
 
-  // 2️⃣ Tell Telegram to use this as webhook
   const response = await fetch(
     `https://api.telegram.org/bot${botToken}/setWebhook`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: webhookUrl
-      })
+      body: JSON.stringify({ url: webhookUrl })
     }
   );
 
