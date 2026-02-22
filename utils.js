@@ -287,9 +287,9 @@ async function buildMessage(data, options = {}) {
 			  try {
 			    await sendMessage(messageText, {
 				  parse_mode: "HTML",
-				  reply_markup: JSON.stringify({
+				  reply_markup: {
 				    inline_keyboard: buttons
-				  })
+				  }
 				});
 			
 			    console.log("✅ Telegram message sent");
