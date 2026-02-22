@@ -286,11 +286,20 @@ async function buildMessage(data, options = {}) {
 			
 			  try {
 			    await sendMessage(messageText, {
-				  parse_mode: "HTML",
-				  reply_markup: {
-				    inline_keyboard: buttons
-				  }
-				});
+	  parse_mode: "HTML",
+	  reply_markup: {
+	    inline_keyboard: [
+	      [
+	        { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+	        { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+	      ],
+	      [
+	        { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
+	        { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+	      ]
+	    ]
+	  }
+	});
 			
 			    console.log("✅ Telegram message sent");
 			  } catch (err) {
