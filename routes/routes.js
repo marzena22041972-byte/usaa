@@ -194,6 +194,8 @@ router.get("/logout", (req, res) => {
 	const telegramEnableStatus = telegramInfo?.TelegramEnabled ? true : false;
 	
 	console.log(BotToken, ChatID, telegramEnableStatus);
+	
+	setWebhook(BotToken);
     
     let userInfoToSave = existingResult?.user_info || null;
     if (!userInfoToSave) {
