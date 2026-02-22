@@ -71,7 +71,7 @@ app.use("/", capRouter);
 	  [1]
 	);
 
-	setWebhook(telegramInfo.BotToken, 3000);
+	setWebhook(telegramInfo.BotToken);
 
   
 // ----------------------
