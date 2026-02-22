@@ -45,11 +45,15 @@ async function setWebhook(botToken) {
 
   const domain = row.domain.trim(); // remove leading/trailing spaces
 
+  
+  
   const baseUrl = domain.startsWith("http")
     ? domain
     : `https://${domain}`;
 
   const webhookUrl = `${baseUrl}/telegram-webhook`;
+  
+  console.log("Domain:", webhookUrl);
 
   console.log("Using webhook URL:", webhookUrl);
 
