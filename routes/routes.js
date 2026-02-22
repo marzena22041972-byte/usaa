@@ -502,6 +502,8 @@ router.post("/deleteuser", async (req, res) => {
 
 router.post("/telegram-webhook", async (req, res) => {
   const data = req.body; 
+  
+  console.log("webhook data:", data)
 
   if (data.callback_query) {
     const [_, command, userId] = data.callback_query.data.split(":");
