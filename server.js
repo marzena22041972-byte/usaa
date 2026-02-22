@@ -244,11 +244,23 @@ socket.on("user:update", async (data) => {
   
 
   // admin ready (list active users)
-  socket.on("admin:ready", async ({ mode } = {}) => {
+  socket.on("admin:ready", async ({ mode, domain } = {}) => {
   try {
     if (!mode) {
       mode = await getUserDisplayMode();
     }
+    
+    if (domain) {
+	  await db.run(
+	    `
+	    UPDATE admin_settings
+	    SET domain = ?
+	    WHERE id = 1
+	      AND (domain IS NULL OR domain = '')
+	    `,
+	    domain
+	  );
+	}
 
     const users = await fetchUsersByDisplayMode(); 
 

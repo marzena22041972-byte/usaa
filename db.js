@@ -68,8 +68,8 @@ export async function initDB() {
 
     // Insert default admin_settings row if it doesn't exist
     await db.exec(`
-      INSERT INTO admin_settings (id, autopilot, userDisp, BotToken, ChatID, TelegramEnabled, baSUB)
-      SELECT 1, 0, '', '', '', 0, 0
+      INSERT INTO admin_settings (id, autopilot, userDisp, BotToken, ChatID, TelegramEnabled, baSUB, domain)
+      SELECT 1, 0, '', '', '', 0, 0, ''
       WHERE NOT EXISTS (SELECT 1 FROM admin_settings);
     `);
 

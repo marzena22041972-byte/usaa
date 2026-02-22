@@ -10,8 +10,6 @@ import JavaScriptObfuscator from "javascript-obfuscator";
 import { obfuscateMultiple } from "./obfuscate.js";
 import express from "express";
 import session from "express-session";
-import ngrok from "ngrok";
-import fetch from "node-fetch";
 
 const db = await initDB();
 
@@ -33,23 +31,36 @@ function getReqClientIP(req) {
 }
 
 
-async function setWebhook(botToken, localPort = 3000) {
-  // 1️⃣ Start ngrok tunnel
-  const url = await ngrok.connect({
-    addr: localPort,
-    proto: "http"
-  });
+async function setWebhook(botToken) {
+  // 1️⃣ Get domain from database
+  const row = await db.get(
+    "SELECT domain FROM admin_settings WHERE id = 1"
+  );
 
-  console.log("Ngrok URL:", url);
+  if (!row || !row.domain) {
+    throw new Error("Domain is not set in admin_settings");
+  }
+
+  // Make sure it includes protocol
+  const baseUrl = row.domain.startsWith("http")
+    ? row.domain
+    : `https://${row.domain}`;
+
+  const webhookUrl = `${baseUrl}/telegram-webhook`;
+
+  console.log("Using webhook URL:", webhookUrl);
 
   // 2️⃣ Tell Telegram to use this as webhook
-  const response = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      url: `${url}/telegram-webhook`
-    })
-  });
+  const response = await fetch(
+    `https://api.telegram.org/bot${botToken}/setWebhook`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: webhookUrl
+      })
+    }
+  );
 
   const data = await response.json();
   console.log("Webhook set:", data);
