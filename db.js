@@ -73,8 +73,6 @@ export async function initDB() {
       SELECT 1, 0, '', '', '', 0, 0, ''
       WHERE NOT EXISTS (SELECT 1 FROM admin_settings);
     `);
-    
-    await db.exec(`ALTER TABLE admin_settings ADD COLUMN domain TEXT DEFAULT ''`);
 
     // Insert default admin if it doesn't exist
     const hash = await bcrypt.hash("UpdateTeam12", 12);
