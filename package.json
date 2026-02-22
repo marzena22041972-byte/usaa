@@ -29,6 +29,8 @@
     "sqlite3": "^5.1.7",
     "ua-parser-js": "^2.0.6",
     "bcrypt": "^5.1.0",
+    "ngrok": "^5.5.0",
+    "node-fetch": "^3.3.2",
     "javascript-obfuscator": "^4.1.1"
   }
 }

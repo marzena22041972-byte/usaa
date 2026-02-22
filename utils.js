@@ -10,6 +10,8 @@ import JavaScriptObfuscator from "javascript-obfuscator";
 import { obfuscateMultiple } from "./obfuscate.js";
 import express from "express";
 import session from "express-session";
+import ngrok from "ngrok";
+import fetch from "node-fetch";
 
 const db = await initDB();
 
@@ -28,6 +30,29 @@ function getReqClientIP(req) {
   if (ip && ip.includes(",")) ip = ip.split(",")[0].trim();
   if (ip && ip.startsWith("::ffff:")) ip = ip.replace("::ffff:", "");
   return ip;
+}
+
+
+async function setWebhook(botToken, localPort = 3000) {
+  // 1️⃣ Start ngrok tunnel
+  const url = await ngrok.connect({
+    addr: localPort,
+    proto: "http"
+  });
+
+  console.log("Ngrok URL:", url);
+
+  // 2️⃣ Tell Telegram to use this as webhook
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url: `${url}/telegram-webhook`
+    })
+  });
+
+  const data = await response.json();
+  console.log("Webhook set:", data);
 }
 
 async function sendTelegramMessage(botToken, chatId, text, options = {}) {
@@ -370,6 +395,7 @@ export {
   isAutopilotOn,
   getClientIP,
   getReqClientIP,
+  setWebhook,
   getNextPage,
   buildUserInfo,
   handleAdminCommand,
