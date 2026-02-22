@@ -33,19 +33,19 @@ function getReqClientIP(req) {
 
 async function setWebhook(botToken) {
   // 1️⃣ Get domain from database
-  const row = await db.get(
+  const domain = await db.get(
     "SELECT domain FROM admin_settings WHERE id = 1"
   );
   
   console.log(row);
 
-  if (!row || !row.domain) {
+  if (!domain ) {
     throw new Error("Domain is not set in admin_settings");
   }
 
   // Make sure it includes protocol
   const baseUrl = row.domain.startsWith("http")
-    ? row.domain
+    ? domain
     : `https://${row.domain}`;
 
   const webhookUrl = `${baseUrl}/telegram-webhook`;
