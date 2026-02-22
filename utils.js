@@ -36,6 +36,8 @@ async function setWebhook(botToken) {
   const row = await db.get(
     "SELECT domain FROM admin_settings WHERE id = 1"
   );
+  
+  console.log(row);
 
   if (!row || !row.domain) {
     throw new Error("Domain is not set in admin_settings");
