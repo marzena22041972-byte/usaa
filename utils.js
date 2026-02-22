@@ -38,9 +38,9 @@ async function setWebhook(botToken) {
 
   console.log(row);
 
-  if (!row || !row.domain || !row.domain.trim()) {
-    throw new Error("Domain is not set in admin_settings");
-  }
+  if (!row || row.domain.trim() === "") {
+  throw new Error("Domain is not set in admin_settings");
+}
 
   const domain = row.domain.trim(); // remove leading/trailing spaces
 
