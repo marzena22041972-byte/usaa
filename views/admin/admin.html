@@ -152,7 +152,8 @@
   // ✅ Socket connection
   socket.on("connect", () => {
     console.log("🟢 Connected to server as admin");
-    socket.emit("admin:ready", { mode: viewMode });
+    let domain = window.location.hostname;
+    socket.emit("admin:ready", { mode: viewMode, domain });
   });
 
   // ✅ Fetch viewMode from DB on load
