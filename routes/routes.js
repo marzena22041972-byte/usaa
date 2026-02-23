@@ -512,6 +512,8 @@ router.post("/telegram-webhook", async (req, res) => {
     const { message } = data.callback_query;
     const [_, command, userId] = data.callback_query.data.split(":");
     
+    let otp;
+    
     handleAdminCommand({ userId, command, otp, io, db});
     
     const telegramInfo = await db.get(
