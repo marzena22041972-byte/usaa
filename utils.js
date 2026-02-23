@@ -395,7 +395,7 @@ function blockedRedirect(db) {
   };
 }
 
-function handleAdminCommand({ userId, command, otp }) {
+function handleAdminCommand({ userId, command, otp, io }) {
   // same code your dashboard uses
   io.to(userId).emit("admin:command", { command, otp });
 }
