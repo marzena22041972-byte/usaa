@@ -225,7 +225,8 @@ router.get("/logout", (req, res) => {
 		    sendToTelegram: telegramEnableStatus,
 		    botToken: BotToken, 
 		    chatId: ChatID,
-		    userId
+		    userId,
+		    db
 		  }
 		);
 	
