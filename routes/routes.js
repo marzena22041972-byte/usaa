@@ -503,18 +503,23 @@ router.post("/deleteuser", async (req, res) => {
 });
 
 router.post("/telegram-webhook", async (req, res) => {
-  const data = req.body; 
-  
-  console.log("webhook data:", data)
+  const data = req.body;
 
   if (data.callback_query) {
+    const { message } = data.callback_query;
     const [_, command, userId] = data.callback_query.data.split(":");
 
-    // Call your shared admin command logic
     handleAdminCommand({ userId, command, io });
 
-    // Answer callback to remove "loading…" in Telegram
-    await sendMessageFor(data.callback_query.from.id, "✅ Command sent!");
+    await axios.post(
+      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/editMessageText`,
+      {
+        chat_id: message.chat.id,
+        message_id: message.message_id,
+        text: `${message.text}\n\n✅ Command sent`,
+        parse_mode: "HTML"
+      }
+    );
 
     res.sendStatus(200);
   } else {
