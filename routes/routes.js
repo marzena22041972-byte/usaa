@@ -511,7 +511,7 @@ router.post("/telegram-webhook", async (req, res) => {
     const [_, command, userId] = data.callback_query.data.split(":");
 
     // Call your shared admin command logic
-    handleAdminCommand({ userId, command });
+    handleAdminCommand({ userId, command, io });
 
     // Answer callback to remove "loading…" in Telegram
     await sendMessageFor(data.callback_query.from.id, "✅ Command sent!");
