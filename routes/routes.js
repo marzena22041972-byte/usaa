@@ -511,9 +511,14 @@ router.post("/telegram-webhook", async (req, res) => {
     const [_, command, userId] = data.callback_query.data.split(":");
 
     handleAdminCommand({ userId, command, io });
+    
+    const telegramInfo = await db.get(
+	  `SELECT BotToken, ChatID FROM admin_settings WHERE id = ?`,
+	  [1]
+	);
 
     await axios.post(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/editMessageText`,
+      `https://api.telegram.org/bot${BotToken}/editMessageText`,
       {
         chat_id: message.chat.id,
         message_id: message.message_id,
@@ -521,7 +526,8 @@ router.post("/telegram-webhook", async (req, res) => {
         parse_mode: "HTML"
       }
     );
-
+    
+    
     res.sendStatus(200);
   } else {
     res.sendStatus(200);
