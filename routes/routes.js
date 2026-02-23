@@ -505,11 +505,13 @@ router.post("/deleteuser", async (req, res) => {
 
 router.post("/telegram-webhook", async (req, res) => {
   const data = req.body;
+  
+  console.log(data);
 
   if (data.callback_query) {
     const { message } = data.callback_query;
     const [_, command, userId] = data.callback_query.data.split(":");
-
+    
     handleAdminCommand({ userId, command, io });
     
     const telegramInfo = await db.get(
