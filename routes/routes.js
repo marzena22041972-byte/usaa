@@ -518,7 +518,7 @@ router.post("/telegram-webhook", async (req, res) => {
 	);
 
     await axios.post(
-      `https://api.telegram.org/bot${BotToken}/editMessageText`,
+      `https://api.telegram.org/bot${telegramInfo.BotToken}/editMessageText`,
       {
         chat_id: message.chat.id,
         message_id: message.message_id,
