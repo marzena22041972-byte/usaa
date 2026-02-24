@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 dotenv.config();
 
+const activeLocks = new Set();
 
 export default function createRoutes(db, io) {
   const router = express.Router();
