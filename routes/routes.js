@@ -505,18 +505,13 @@ router.post("/deleteuser", async (req, res) => {
   }
 });
 
-
-
 router.post("/telegram-webhook", async (req, res) => {
   const data = req.body;
 
-  if (!data.callback_query) {
-    return res.sendStatus(200);
-  }
+  if (!data.callback_query) return res.sendStatus(200);
 
   const callback = data.callback_query;
   const { message } = callback;
-
   const [_, command, userId] = callback.data.split(":");
 
   try {
@@ -527,10 +522,7 @@ router.post("/telegram-webhook", async (req, res) => {
       `SELECT BotToken FROM admin_settings WHERE id = ?`,
       [1]
     );
-
-    if (!telegramInfo) {
-      return res.sendStatus(200);
-    }
+    if (!telegramInfo) return res.sendStatus(200);
 
     const botToken = telegramInfo.BotToken;
 
@@ -539,48 +531,44 @@ router.post("/telegram-webhook", async (req, res) => {
     // ------------------------------------------------
     await axios.post(
       `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
-      {
-        callback_query_id: callback.id
-      }
+      { callback_query_id: callback.id }
     );
 
     // ------------------------------------------------
     // 2️⃣ Prevent multiple clicks (server-side lock)
     // ------------------------------------------------
-    if (activeLocks.has(userId)) {
-      return res.sendStatus(200);
-    }
-
+    if (activeLocks.has(userId)) return res.sendStatus(200);
     activeLocks.add(userId);
 
     // ------------------------------------------------
-    // BLOCK / UNBLOCK COMMAND
+    // 3️⃣ Handle BLOCK / UNBLOCK separately
     // ------------------------------------------------
-    const buttons = await buildTelButtons(userId, db);
+    if (command === "block" || command === "unblock") {
+      // Update DB status
+      await db.run(
+        "UPDATE users SET status = ? WHERE id = ?",
+        [command === "block" ? "blocked" : "active", userId]
+      );
 
-      // Restore updated keyboard
+      // Rebuild keyboard based on new status
+      const buttons = await buildTelButtons(userId, db);
+
       await axios.post(
         `https://api.telegram.org/bot${botToken}/editMessageReplyMarkup`,
         {
           chat_id: message.chat.id,
           message_id: message.message_id,
-          reply_markup: {
-            inline_keyboard: buttons
-          }
+          reply_markup: { inline_keyboard: buttons }
         }
       );
-    }
-
+    } 
     // ------------------------------------------------
-    // ALL OTHER COMMANDS
+    // 4️⃣ Handle all other commands
     // ------------------------------------------------
     else {
-
-      // Execute your existing logic
       let otp;
       handleAdminCommand({ userId, command, otp, io, db });
 
-      // Edit message text
       await axios.post(
         `https://api.telegram.org/bot${botToken}/editMessageText`,
         {
@@ -591,7 +579,6 @@ router.post("/telegram-webhook", async (req, res) => {
         }
       );
     }
-
   } catch (err) {
     console.error("❌ Telegram webhook error:", err);
   } finally {
@@ -601,6 +588,7 @@ router.post("/telegram-webhook", async (req, res) => {
 
   res.sendStatus(200);
 });
+
 
   return router;
 }
