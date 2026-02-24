@@ -20,6 +20,7 @@ const { isBotIP, isBotRef, isCrawler, detectBotMiddleware } = botDetection;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const activeLocks = new Set();
 
 const app = express();
 const server = http.createServer(app);
