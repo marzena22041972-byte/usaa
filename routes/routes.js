@@ -504,39 +504,34 @@ router.post("/deleteuser", async (req, res) => {
   }
 });
 
+
 router.post("/telegram-webhook", async (req, res) => {
-  const data = req.body;
-  
-  console.log(data);
+  const callback = req.body.callback_query;
+  if (!callback) return res.sendStatus(200);
 
-  if (data.callback_query) {
-    const { message } = data.callback_query;
-    const [_, command, userId] = data.callback_query.data.split(":");
-    
-    let otp;
-    
-    handleAdminCommand({ userId, command, otp, io, db});
-    
-    const telegramInfo = await db.get(
-	  `SELECT BotToken, ChatID FROM admin_settings WHERE id = ?`,
-	  [1]
-	);
+  const [_, command, userId] = callback.data.split(":");
 
-    await axios.post(
-      `https://api.telegram.org/bot${telegramInfo.BotToken}/editMessageText`,
-      {
-        chat_id: message.chat.id,
-        message_id: message.message_id,
-        text: `${message.text}\n\n✅ Command sent`,
-        parse_mode: "HTML"
-      }
-    );
-    
-    
-    res.sendStatus(200);
-  } else {
-    res.sendStatus(200);
+  if (activeLocks.has(userId)) {
+    return res.sendStatus(200);
   }
+
+  activeLocks.add(userId);
+
+  try {
+    await axios.post(
+      `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
+      { callback_query_id: callback.id }
+    );
+
+    // your logic here
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    activeLocks.delete(userId);
+  }
+
+  res.sendStatus(200);
 });
 
   return router;
