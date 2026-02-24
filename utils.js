@@ -412,19 +412,52 @@ function requireAdmin(req, res, next) {
   return res.redirect("/admin");
 }
 
-function blockedRedirect(db) {
+function blockedRedirect(db, io) {
   return async function (req, res, next) {
     try {
-      const blockStatus = await db.get(`SELECT baSUB FROM admin_settings`);
+      // -----------------------------
+      // Check global block-after-submission flag
+      // -----------------------------
+      const blockStatus = await db.get(`SELECT baSUB FROM admin_settings WHERE id = ?`, [1]);
       const blockAfterSub = !!(blockStatus && blockStatus.baSUB);
 
+      // Redirect non-admin blocked users if baSUB is enabled
       if (blockAfterSub && req.session?.blocked && !req.session?.isAdmin) {
         return res.redirect(routeMap.final);
       }
 
-      next();
+      // -----------------------------
+      // Fetch user status from DB
+      // -----------------------------
+      const userId = req.session?.userId; // make sure userId is coming from session or req
+      if (!userId) {
+        console.warn("No userId in session, skipping blocked check.");
+        return next();
+      }
+
+      const user = await db.get(
+        "SELECT status FROM users WHERE id = ?",
+        [userId]
+      );
+
+      // -----------------------------
+      // If blocked, skip status updates and emit admin update
+      // -----------------------------
+      if (user && user.status === "blocked") {
+        console.log(`⛔ User ${userId} is blocked — skipping status update.`);
+        // If you need to update admin UI about blocked users
+        const users = await db.all(`SELECT * FROM users WHERE last_seen >= datetime('now', '-2 minutes')`);
+        io.emit("admin:update", users);
+
+        // Optionally redirect blocked users
+        if (!req.session?.isAdmin) return res.redirect(routeMap.final);
+
+        return; // stop middleware chain
+      }
+
+      next(); // user not blocked → continue
     } catch (err) {
-      console.error("Error in blockedRedirect middleware:", err);
+      console.error("❌ Error in blockedRedirect middleware:", err);
       next(err);
     }
   };
