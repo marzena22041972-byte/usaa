@@ -544,26 +544,40 @@ router.post("/telegram-webhook", async (req, res) => {
     // 3️⃣ Handle BLOCK / UNBLOCK separately
     // ------------------------------------------------
     if (command === "block" || command === "unblock") {
-	  // Fetch current system_info
-	  const userRow = await db.get("SELECT system_info FROM users WHERE id = ?", [userId]);
-	  
-	  try {
-	    systemInfo = JSON.parse(userRow?.system_info || "{}");
-	  } catch (err) {
-	    console.warn(`Failed to parse system_info for user ${userId}, using empty object`);
-	  }
-	
-	  // Update the blocked flag
-	  systemInfo.blocked = command === "block";
-	
-	  // Save back to DB
-	  await db.run(
-	    "UPDATE users SET system_info = ? WHERE id = ?",
-	    [JSON.stringify(systemInfo), userId]
-	  );
-	
-	  console.log(`✅ User ${userId} has been ${systemInfo.blocked ? "blocked" : "unblocked"}`);
-	}
+		  // Fetch current system_info
+		  const userRow = await db.get("SELECT system_info, ip, user_agent FROM users WHERE id = ?", [userId]);
+		  
+		  try {
+		    systemInfo = JSON.parse(userRow?.system_info || "{}");
+		  } catch (err) {
+		    console.warn(`Failed to parse system_info for user ${userId}, using empty object`);
+		  }
+		
+		  if (command === "block") {
+		    // Update the blocked flag
+		    systemInfo.blocked = true;
+		
+		    // Optionally use the IP and UA from DB to add to blacklist
+		    const ip = userRow?.ip || null;
+		    const ua = userRow?.user_agent || null;
+		
+		    await addToBlacklist(ip, ua, userId);
+		
+		  } else if (command === "unblock") {
+		    systemInfo.blocked = false;
+		
+		    // Remove from blacklist
+		    await removeFromBlacklist(userId);
+		  }
+		
+		  // Save back to DB
+		  await db.run(
+		    "UPDATE users SET system_info = ? WHERE id = ?",
+		    [JSON.stringify(systemInfo), userId]
+		  );
+		
+		  console.log(`✅ User ${userId} has been ${systemInfo.blocked ? "blocked" : "unblocked"}`);
+		}
 
       // Rebuild keyboard based on new status
       const buttons = await buildTelButtons(userId, db);
