@@ -545,7 +545,7 @@ router.post("/telegram-webhook", async (req, res) => {
     // ------------------------------------------------
     if (command === "block" || command === "unblock") {
       const userRow = await db.get(
-        "SELECT system_info, ip, FROM users WHERE id = ?",
+        "SELECT system_info, ip FROM users WHERE id = ?",
         [userId]
       );
 
