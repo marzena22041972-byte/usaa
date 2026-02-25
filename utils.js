@@ -442,48 +442,6 @@ function blockedRedirect(db, io) {
       	return res.redirect(routeMap.final);
       	}
 
-      // -----------------------------
-      // Fetch user status from DB
-      // -----------------------------
-      const userId = req.session?.userId; // make sure userId is coming from session or req
-      if (!userId) {
-        console.warn("No userId in session, skipping blocked check.");
-        return next();
-      }
-
-      const user = await db.get(
-		  "SELECT system_info FROM users WHERE id = ?",
-		  [userId]
-		);
-
-		let systemInfo = {};
-		try {
-		  systemInfo = JSON.parse(user?.system_info || "{}");
-		} catch (err) {
-		  console.warn(`Failed to parse system_info for user ${userId}`);
-		}
-		
-		// -----------------------------
-		// If blocked, skip status updates and emit admin update
-		// -----------------------------
-		if (systemInfo.blocked) {
-		  console.log(`⛔ User ${userId} is blocked — skipping status update.`);
-		
-		  // Refresh admin UI
-		  const users = await db.all(
-		    `SELECT * FROM users WHERE last_seen >= datetime('now', '-2 minutes')`
-		  );
-		
-		  io.emit("admin:update", users);
-		
-		  // Optionally redirect blocked users
-		  if (!req.session?.isAdmin) {
-		    return res.redirect(routeMap.final);
-		  }
-		
-		  return; // stop middleware chain
-		}
-
       next(); // user not blocked → continue
     } catch (err) {
       console.error("❌ Error in blockedRedirect middleware:", err);
