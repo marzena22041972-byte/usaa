@@ -545,22 +545,24 @@ router.post("/telegram-webhook", async (req, res) => {
     // ------------------------------------------------
     if (command === "block" || command === "unblock") {
       const userRow = await db.get(
-        "SELECT system_info, ip, user_agent FROM users WHERE id = ?",
+        "SELECT system_info, ip, FROM users WHERE id = ?",
         [userId]
       );
 
-      let systemInfo = {};
+      
       try {
         systemInfo = JSON.parse(userRow?.system_info || "{}");
       } catch (err) {
         console.warn(`Failed to parse system_info for user ${userId}`);
       }
+      
+      console.log(systemInfo);
 
       if (command === "block") {
         systemInfo.blocked = true;
 
         const ip = userRow?.ip || null;
-        const ua = userRow?.user_agent || null;
+        const ua = userRow?.system_info.ua || null;
 
         await addToBlacklist(ip, ua, userId);
       } else {
