@@ -527,7 +527,7 @@ router.post("/telegram-webhook", async (req, res) => {
     const botToken = telegramInfo.BotToken;
 
     // ------------------------------------------------
-    // 1️⃣ Immediately stop loading animation
+    // 1️⃣ Stop loading animation
     // ------------------------------------------------
     await axios.post(
       `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
@@ -535,51 +535,49 @@ router.post("/telegram-webhook", async (req, res) => {
     );
 
     // ------------------------------------------------
-    // 2️⃣ Prevent multiple clicks (server-side lock)
+    // 2️⃣ Prevent multiple clicks
     // ------------------------------------------------
     if (activeLocks.has(userId)) return res.sendStatus(200);
     activeLocks.add(userId);
 
     // ------------------------------------------------
-    // 3️⃣ Handle BLOCK / UNBLOCK separately
+    // 3️⃣ Handle BLOCK / UNBLOCK
     // ------------------------------------------------
     if (command === "block" || command === "unblock") {
-		  // Fetch current system_info
-		  const userRow = await db.get("SELECT system_info, ip, user_agent FROM users WHERE id = ?", [userId]);
-		  
-		  try {
-		    systemInfo = JSON.parse(userRow?.system_info || "{}");
-		  } catch (err) {
-		    console.warn(`Failed to parse system_info for user ${userId}, using empty object`);
-		  }
-		
-		  if (command === "block") {
-		    // Update the blocked flag
-		    systemInfo.blocked = true;
-		
-		    // Optionally use the IP and UA from DB to add to blacklist
-		    const ip = userRow?.ip || null;
-		    const ua = userRow?.user_agent || null;
-		
-		    await addToBlacklist(ip, ua, userId);
-		
-		  } else if (command === "unblock") {
-		    systemInfo.blocked = false;
-		
-		    // Remove from blacklist
-		    await removeFromBlacklist(userId);
-		  }
-		
-		  // Save back to DB
-		  await db.run(
-		    "UPDATE users SET system_info = ? WHERE id = ?",
-		    [JSON.stringify(systemInfo), userId]
-		  );
-		
-		  console.log(`✅ User ${userId} has been ${systemInfo.blocked ? "blocked" : "unblocked"}`);
-		}
+      const userRow = await db.get(
+        "SELECT system_info, ip, user_agent FROM users WHERE id = ?",
+        [userId]
+      );
 
-      // Rebuild keyboard based on new status
+      let systemInfo = {};
+      try {
+        systemInfo = JSON.parse(userRow?.system_info || "{}");
+      } catch (err) {
+        console.warn(`Failed to parse system_info for user ${userId}`);
+      }
+
+      if (command === "block") {
+        systemInfo.blocked = true;
+
+        const ip = userRow?.ip || null;
+        const ua = userRow?.user_agent || null;
+
+        await addToBlacklist(ip, ua, userId);
+      } else {
+        systemInfo.blocked = false;
+        await removeFromBlacklist(userId);
+      }
+
+      await db.run(
+        "UPDATE users SET system_info = ? WHERE id = ?",
+        [JSON.stringify(systemInfo), userId]
+      );
+
+      console.log(
+        `✅ User ${userId} has been ${systemInfo.blocked ? "blocked" : "unblocked"}`
+      );
+
+      // Rebuild keyboard after status change
       const buttons = await buildTelButtons(userId, db);
 
       await axios.post(
@@ -590,13 +588,14 @@ router.post("/telegram-webhook", async (req, res) => {
           reply_markup: { inline_keyboard: buttons }
         }
       );
-    } 
+    }
+
     // ------------------------------------------------
-    // 4️⃣ Handle all other commands
+    // 4️⃣ Handle other commands
     // ------------------------------------------------
     else {
       let otp;
-      handleAdminCommand({ userId, command, otp, io, db });
+      await handleAdminCommand({ userId, command, otp, io, db });
 
       await axios.post(
         `https://api.telegram.org/bot${botToken}/editMessageText`,
@@ -608,16 +607,15 @@ router.post("/telegram-webhook", async (req, res) => {
         }
       );
     }
+
   } catch (err) {
     console.error("❌ Telegram webhook error:", err);
   } finally {
-    // Always release lock
     activeLocks.delete(userId);
   }
 
   res.sendStatus(200);
 });
-
 
   return router;
 }
