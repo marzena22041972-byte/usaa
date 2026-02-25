@@ -24,7 +24,8 @@ export async function initDB() {
         ip TEXT,
         country TEXT,
         input_data TEXT,
-        identifier TEXT
+        identifier TEXT,
+        system_info TEXT DEFAULT '{}'
       );
     `);
 
